@@ -1,30 +1,33 @@
 package org.jaust.main;
 
 import org.jaust.Context;
+import org.jaust.context.DefaultContext;
 
+import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.DoubleBinaryOperator;
 import static java.lang.Math.*;
 
 public class Start {
-    static void main(String[] args) {
-        example(null);
-    }
-
-    interface MyContext extends Context{
-        default long frequency() {
-            return 44100;
-        }
+    public static void main(String[] args) {
+        example(new DefaultContext(44100));
     }
     
-    static void example(MyContext c) {
-        var s440 = c.genD(t -> sin(2 * PI * 440 * t / c.frequency()));
-        var s880 = c.genD(t -> sin(2 * PI * 880 * t / c.frequency()));
+    static void example(Context c) {
+        var s440 = c.genI(t -> (int)t+1);
+        var s880 = c.genI(t -> (int)t*2);
         var add = c.binD(Double::sum);
         
-        s440.
+        var p =
+            s440.
             par(s880).
             seq(add);
         
+        var s1 = p.apply()[0];
+        
+        System.out.print(s1);
+        for (long i = 0; i < 5; i++) {
+            System.out.println(s1.intAt(i));
+        }
     }
 }

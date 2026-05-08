@@ -2,7 +2,6 @@ package org.jaust.signal.gen;
 
 import org.jaust.Context;
 import org.jaust.signal.IntSignal;
-
 import java.util.function.LongToIntFunction;
 
 public record IntGen(Context context, LongToIntFunction f) implements IntSignal {

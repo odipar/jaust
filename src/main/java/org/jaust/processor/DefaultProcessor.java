@@ -9,7 +9,7 @@ public interface DefaultProcessor extends Processor {
         return context().par(prepend(this, processors));
     }
     default Processor seq(Processor... processors) {
-        return context().par(prepend(this, processors));
+        return context().seq(prepend(this, processors));
     }
     default Processor div(Processor processor) {
         return context().div(this, processor);

@@ -2,7 +2,6 @@ package org.jaust.signal.gen;
 
 import org.jaust.Context;
 import org.jaust.signal.BooleanSignal;
-
 import java.util.function.LongPredicate;
 
 public record BoolGen(Context context, LongPredicate f) implements BooleanSignal {
