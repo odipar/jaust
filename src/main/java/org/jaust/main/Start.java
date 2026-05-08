@@ -25,11 +25,11 @@ public class Start {
         
         var s = p.apply()[0];
         
-        double t = 0.0;
+        double sum = 0.0;
         
         for (long i = 0; i < 10_000_000_000L; i++) {
-            t += s.longAt(i);
+            sum += s.longAt(i);
         }
-        System.out.println(t);
+        System.out.println(sum);
     }
 }
