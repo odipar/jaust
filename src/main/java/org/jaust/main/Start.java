@@ -14,9 +14,9 @@ public class Start {
     }
     
     static void example(Context c) {
-        var s440 = c.genI(t -> (int)t+1);
-        var s880 = c.genI(t -> (int)t*2);
-        var add = c.binD(Double::sum);
+        var s440 = c.genL(t -> t+1);
+        var s880 = c.genL(t -> t*2);
+        var add = c.binL(Long::sum);
         
         var p =
             s440.
@@ -27,7 +27,7 @@ public class Start {
         
         System.out.print(s1);
         for (long i = 0; i < 5; i++) {
-            System.out.println(s1.intAt(i));
+            System.out.println(s1.longAt(i));
         }
     }
 }
