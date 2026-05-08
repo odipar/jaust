@@ -64,9 +64,9 @@ public record DefaultContext(long frequency) implements Context {
         return result;
     }
     public Processor div(Processor p1, Processor p2) {
-        return null;
+        return new DivProcessor(p1, p2);
     }
     public Processor rec(Processor p1, Processor p2) {
-        return null;
+        return new RecProcessor(p1, p2);
     }
 }
