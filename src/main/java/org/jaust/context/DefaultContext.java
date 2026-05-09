@@ -9,6 +9,8 @@ import org.jaust.processor.bin.BoolBinProcessor;
 import org.jaust.processor.bin.DoubleBinProcessor;
 import org.jaust.processor.bin.IntBinProcessor;
 import org.jaust.processor.bin.LongBinProcessor;
+import org.jaust.processor.resample.DownProcessor;
+import org.jaust.processor.resample.UpProcessor;
 import org.jaust.signal.gen.BoolGen;
 import org.jaust.signal.gen.DoubleGen;
 import org.jaust.signal.gen.IntGen;
@@ -79,5 +81,12 @@ public record DefaultContext(long frequency) implements Context {
     }
     public Processor rec(Processor p1, Processor p2) {
         return new RecProcessor(p1, p2);
+    }
+    public Processor resample(Processor source) {
+        long srcFreq = source.context().frequency();
+        long tgtFreq = this.frequency();
+        if (srcFreq == tgtFreq) return source;
+        if (srcFreq < tgtFreq) return new UpProcessor(this, source);
+        return new DownProcessor(this, source);
     }
 }
