@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.context.DefaultContext;
+import org.jaust.processor.array.DefaultProcessorArray;
 import org.jaust.signal.SignalArray;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,10 +52,10 @@ class DivProcessorTest {
     void splitTwo_toFour_roundRobinDistribution() {
         Processor c1 = ctx.valD(1.0);
         Processor c2 = ctx.valD(2.0);
-        Processor p1 = ctx.par(c1, c2);                  // 2 outputs: [1.0, 2.0]
+        Processor p1 = ctx.par(DefaultProcessorArray.of(c1, c2));                  // 2 outputs: [1.0, 2.0]
 
         Processor adder = ctx.binD(Double::sum);
-        Processor p2 = ctx.par(adder, adder);             // 4 inputs, 2 outputs
+        Processor p2 = ctx.par(DefaultProcessorArray.of(adder, adder));             // 4 inputs, 2 outputs
 
         Processor div = ctx.div(p1, p2);
 

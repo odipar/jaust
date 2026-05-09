@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.context.DefaultContext;
+import org.jaust.processor.array.DefaultProcessorArray;
 import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +54,7 @@ class RecProcessorTest {
         Processor rec = ctx.rec(p1, p2);
 
         // Provide external input = constant 1.0 via seq
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
         SignalArray out = combined.apply();
         assertEquals(1.0,  out.at(0).doubleAt(0), 1e-9);
@@ -68,7 +69,7 @@ class RecProcessorTest {
     @Test
     void feedbackInitialisedToZero() {
         Processor rec      = ctx.rec(ctx.binD(Double::sum), wire());
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
         // At t=0 the feedback is 0 (initial state), so result = 0 + 1 = 1
         assertEquals(1.0, combined.apply().at(0).doubleAt(0), 1e-9);
@@ -100,7 +101,7 @@ class RecProcessorTest {
         };
 
         Processor rec      = ctx.rec(ctx.binD(Double::sum), scaleHalf);
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
         SignalArray out = combined.apply();
         assertEquals(1.0,  out.at(0).doubleAt(0), 1e-9);
@@ -144,7 +145,7 @@ class RecProcessorTest {
     @Test
     void outOfOrderQuery_earlierTimeAfterLaterTime() {
         Processor rec      = ctx.rec(ctx.binD(Double::sum), wire());
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
         SignalArray out = combined.apply();
         assertEquals(10.0, out.at(0).doubleAt(9), 1e-9);  // query t=9 first

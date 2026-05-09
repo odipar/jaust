@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.processor.*;
+import org.jaust.processor.array.DefaultProcessorArray;
 import org.jaust.processor.bin.DoubleBinProcessor;
 import org.jaust.processor.bin.IntBinProcessor;
 import org.jaust.processor.bin.LongBinProcessor;
@@ -58,17 +59,11 @@ public record DefaultContext(long frequency) implements Context {
     public Processor binD(DoubleBinaryOperator op) {
         return new DoubleBinProcessor(this, op);
     }
-    public Processor par(Processor... processors) {
-        Processor result = processors[0];
-        for (int i = 1; i < processors.length; i++)
-            result = new ParProcessor(result, processors[i]);
-        return result;
+    public Processor par(ProcessorArray processors) {
+        return processors.reduce(ParProcessor::new);
     }
-    public Processor seq(Processor... processors) {
-        Processor result = processors[0];
-        for (int i = 1; i < processors.length; i++)
-            result = new SeqProcessor(result, processors[i]);
-        return result;
+    public Processor seq(ProcessorArray processors) {
+        return processors.reduce(SeqProcessor::new);
     }
     public Processor div(Processor p1, Processor p2) {
         return new DivProcessor(p1, p2);
