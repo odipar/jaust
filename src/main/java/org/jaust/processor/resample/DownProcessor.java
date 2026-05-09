@@ -12,13 +12,18 @@ import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
 // Downsamples every output signal of a source processor from its context frequency to the target context frequency.
-// Each target sample is computed by averaging (smoothing) all source samples that fall within the corresponding
-// target sample window [t*srcFreq/tgtFreq, (t+1)*srcFreq/tgtFreq). Boolean signals use majority voting.
+// Each target sample averages all source samples in the exact rational window
+// [ceil(t*srcFreq/tgtFreq), ceil((t+1)*srcFreq/tgtFreq)), which correctly handles coprime
+// source and target frequencies without double-counting or missing source samples.
+// Boolean signals use majority voting; numeric types compute the arithmetic mean.
 public record DownProcessor(Context context, Processor source) implements DefaultProcessor {
 
     public Signal.Type[] inType() { return new Signal.Type[]{}; }
 
     public Signal.Type[] outType() { return source.outType(); }
+
+    // Ceiling division for non-negative integers: ceil(a / b)
+    private static long ceilDiv(long a, long b) { return (a + b - 1) / b; }
 
     public SignalArray apply(SignalArray signal) {
         SignalArray sourceOutput = source.apply();
@@ -31,8 +36,8 @@ public record DownProcessor(Context context, Processor source) implements Defaul
                 case DOUBLE -> new DoubleSignal() {
                     public Context context() { return DownProcessor.this.context; }
                     public double doubleAt(long t) {
-                        long srcStart = t * srcFreq / tgtFreq;
-                        long srcEnd = (t + 1) * srcFreq / tgtFreq;
+                        long srcStart = ceilDiv(t * srcFreq, tgtFreq);
+                        long srcEnd = ceilDiv((t + 1) * srcFreq, tgtFreq);
                         if (srcStart >= srcEnd) return s.doubleAt(srcStart);
                         double sum = 0.0;
                         for (long st = srcStart; st < srcEnd; st++) sum += s.doubleAt(st);
@@ -42,8 +47,8 @@ public record DownProcessor(Context context, Processor source) implements Defaul
                 case INT -> new IntSignal() {
                     public Context context() { return DownProcessor.this.context; }
                     public int intAt(long t) {
-                        long srcStart = t * srcFreq / tgtFreq;
-                        long srcEnd = (t + 1) * srcFreq / tgtFreq;
+                        long srcStart = ceilDiv(t * srcFreq, tgtFreq);
+                        long srcEnd = ceilDiv((t + 1) * srcFreq, tgtFreq);
                         if (srcStart >= srcEnd) return s.intAt(srcStart);
                         long sum = 0;
                         for (long st = srcStart; st < srcEnd; st++) sum += s.intAt(st);
@@ -53,8 +58,8 @@ public record DownProcessor(Context context, Processor source) implements Defaul
                 case LONG -> new LongSignal() {
                     public Context context() { return DownProcessor.this.context; }
                     public long longAt(long t) {
-                        long srcStart = t * srcFreq / tgtFreq;
-                        long srcEnd = (t + 1) * srcFreq / tgtFreq;
+                        long srcStart = ceilDiv(t * srcFreq, tgtFreq);
+                        long srcEnd = ceilDiv((t + 1) * srcFreq, tgtFreq);
                         if (srcStart >= srcEnd) return s.longAt(srcStart);
                         long sum = 0;
                         for (long st = srcStart; st < srcEnd; st++) sum += s.longAt(st);
@@ -64,8 +69,8 @@ public record DownProcessor(Context context, Processor source) implements Defaul
                 case BOOL -> new BooleanSignal() {
                     public Context context() { return DownProcessor.this.context; }
                     public boolean boolAt(long t) {
-                        long srcStart = t * srcFreq / tgtFreq;
-                        long srcEnd = (t + 1) * srcFreq / tgtFreq;
+                        long srcStart = ceilDiv(t * srcFreq, tgtFreq);
+                        long srcEnd = ceilDiv((t + 1) * srcFreq, tgtFreq);
                         if (srcStart >= srcEnd) return s.boolAt(srcStart);
                         long count = srcEnd - srcStart;
                         long trueCount = 0;

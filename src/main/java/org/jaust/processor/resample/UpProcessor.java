@@ -12,8 +12,11 @@ import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
 // Upsamples every output signal of a source processor from its context frequency to the target context frequency.
-// At target time t, a source sample is returned only when t maps exactly to a source sample boundary;
-// all other target times produce a zero value (zero-stuffing).
+// Uses rational arithmetic to correctly place source samples at their exact target positions for any ratio,
+// including coprime frequencies. For each target time t, the nearest source index
+// i = round(t * srcFreq / tgtFreq) is computed; it is emitted only when the round-trip
+// round(i * tgtFreq / srcFreq) == t, ensuring each source sample appears exactly once.
+// All other target times produce a zero value (zero-stuffing).
 public record UpProcessor(Context context, Processor source) implements DefaultProcessor {
 
     public Signal.Type[] inType() { return new Signal.Type[]{}; }
@@ -24,6 +27,9 @@ public record UpProcessor(Context context, Processor source) implements DefaultP
         SignalArray sourceOutput = source.apply();
         long srcFreq = source.context().frequency();
         long tgtFreq = context.frequency();
+        // Half-step offsets for rounding (integer arithmetic): round(a/b) = (a + b/2) / b
+        long halfSrc = srcFreq / 2;
+        long halfTgt = tgtFreq / 2;
         Signal[] adapted = new Signal[sourceOutput.length()];
         for (int i = 0; i < sourceOutput.length(); i++) {
             Signal s = sourceOutput.at(i);
@@ -31,29 +37,29 @@ public record UpProcessor(Context context, Processor source) implements DefaultP
                 case DOUBLE -> new DoubleSignal() {
                     public Context context() { return UpProcessor.this.context; }
                     public double doubleAt(long t) {
-                        long num = t * srcFreq;
-                        return (num % tgtFreq == 0) ? s.doubleAt(num / tgtFreq) : 0.0;
+                        long si = (t * srcFreq + halfTgt) / tgtFreq;  // round(t*srcFreq/tgtFreq)
+                        return ((si * tgtFreq + halfSrc) / srcFreq == t) ? s.doubleAt(si) : 0.0;
                     }
                 };
                 case INT -> new IntSignal() {
                     public Context context() { return UpProcessor.this.context; }
                     public int intAt(long t) {
-                        long num = t * srcFreq;
-                        return (num % tgtFreq == 0) ? s.intAt(num / tgtFreq) : 0;
+                        long si = (t * srcFreq + halfTgt) / tgtFreq;
+                        return ((si * tgtFreq + halfSrc) / srcFreq == t) ? s.intAt(si) : 0;
                     }
                 };
                 case LONG -> new LongSignal() {
                     public Context context() { return UpProcessor.this.context; }
                     public long longAt(long t) {
-                        long num = t * srcFreq;
-                        return (num % tgtFreq == 0) ? s.longAt(num / tgtFreq) : 0L;
+                        long si = (t * srcFreq + halfTgt) / tgtFreq;
+                        return ((si * tgtFreq + halfSrc) / srcFreq == t) ? s.longAt(si) : 0L;
                     }
                 };
                 case BOOL -> new BooleanSignal() {
                     public Context context() { return UpProcessor.this.context; }
                     public boolean boolAt(long t) {
-                        long num = t * srcFreq;
-                        return (num % tgtFreq == 0) && s.boolAt(num / tgtFreq);
+                        long si = (t * srcFreq + halfTgt) / tgtFreq;
+                        return ((si * tgtFreq + halfSrc) / srcFreq == t) && s.boolAt(si);
                     }
                 };
             };
