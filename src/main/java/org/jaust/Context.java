@@ -40,6 +40,12 @@ public interface Context {
     // rec (~)
     Processor rec(Processor p1, Processor p2);
     
+    // Resampling combinators
+    // up: upsample all outputs of source processor to this context's frequency (zero-stuffing)
+    Processor up(Processor source);
+    // down: downsample all outputs of source processor to this context's frequency (smoothing/averaging)
+    Processor down(Processor source);
+    
     default Processor par(Processor... processors) { return par(of(processors)); }
     default Processor seq(Processor... processors) { return seq(of(processors)); }
     
