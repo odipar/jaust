@@ -3,9 +3,7 @@ package org.jaust.signal.cache;
 import org.jaust.Context;
 import org.jaust.signal.DoubleSignal;
 
-// Purely functional cache for a double signal.
-// Caches the last value and time, and returns the cached value if the time is the same as the last time.
-// Otherwise, it updates the cache with the new value and time.
+// Caches the last queried double value to avoid recomputing the same sample time twice.
 public class DoubleCache implements DoubleSignal {
     private final DoubleSignal s;
     

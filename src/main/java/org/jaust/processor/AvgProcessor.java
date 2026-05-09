@@ -7,13 +7,7 @@ import org.jaust.signal.DoubleSignal;
 import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
-/**
- * Implements the Faust merge composition operator ({@code >:}).
- * <p>
- * {@code p1 >: p2}: p1 has {@code m} outputs and p2 has {@code n} inputs, where {@code m} must
- * be a multiple of {@code n}. Input {@code j} of p2 receives the average of p1's outputs at
- * indices {@code j, j+n, j+2n, ...}.
- */
+// Faust merge composition (>:): averages groups of p1's outputs and feeds the results into p2's inputs.
 public record AvgProcessor(Processor p1, Processor p2) implements DefaultProcessor {
 
     public Context context() { return p1.context(); }

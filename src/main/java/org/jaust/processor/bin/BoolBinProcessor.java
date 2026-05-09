@@ -8,6 +8,7 @@ import org.jaust.signal.BooleanSignal;
 import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
+// Two-input, one-output processor applying a boolean binary operator to two boolean signals.
 public record BoolBinProcessor(Context context, BooleanBinaryOperator o) implements DefaultProcessor {
     public Signal.Type[] inType() {
         return new Signal.Type[] {Signal.Type.BOOL, Signal.Type.BOOL};

@@ -2,6 +2,7 @@ package org.jaust.signal;
 
 import org.jaust.Signal;
 
+// A Signal producing boolean values; other types default to 0 (false) or 1 (true) scaled to their range.
 public interface BooleanSignal extends Signal {
     default Signal.Type type() { return  Signal.Type.BOOL; }
     

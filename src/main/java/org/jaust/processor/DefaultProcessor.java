@@ -3,6 +3,7 @@ package org.jaust.processor;
 import org.jaust.Processor;
 import static org.jaust.processor.array.DefaultProcessorArray.of;
 
+// Mixin interface that provides default combinator implementations (par, seq, div, avg, rec) delegating to the context.
 public interface DefaultProcessor extends Processor {
     
     // default implementations for combinators

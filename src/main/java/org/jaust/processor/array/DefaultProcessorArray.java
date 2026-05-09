@@ -4,6 +4,7 @@ import org.jaust.Processor;
 import org.jaust.processor.ProcessorArray;
 import java.util.Objects;
 
+// Array-backed implementation of ProcessorArray.
 public class DefaultProcessorArray implements ProcessorArray {
     private final Processor[] array;
 

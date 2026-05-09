@@ -5,6 +5,7 @@ import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.signal.SignalArray;
 
+// Faust parallel composition (,): runs p1 and p2 side by side, concatenating their inputs and outputs.
 public record ParProcessor(Processor p1, Processor p2) implements DefaultProcessor {
 
     public Context context() {

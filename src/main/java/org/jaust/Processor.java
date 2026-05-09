@@ -4,6 +4,7 @@ import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 import org.jaust.processor.ProcessorArray;
 
+// A signal processing unit with typed inputs and outputs. Processors are composed using Faust-style operators.
 public interface Processor {
     Context context();
     

@@ -3,6 +3,7 @@ package org.jaust.signal.cache;
 import org.jaust.Context;
 import org.jaust.signal.LongSignal;
 
+// Caches the last queried long value to avoid recomputing the same sample time twice.
 public class LongCache implements LongSignal {
     private final LongSignal s;
 

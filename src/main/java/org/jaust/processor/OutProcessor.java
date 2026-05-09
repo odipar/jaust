@@ -5,6 +5,7 @@ import org.jaust.Signal;
 import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
+// Wraps a single Signal as a zero-input, one-output Processor.
 public record OutProcessor(Signal output) implements DefaultProcessor {
     
     public Context context() {

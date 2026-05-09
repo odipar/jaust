@@ -8,6 +8,7 @@ import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 import java.util.function.DoubleBinaryOperator;
 
+// Two-input, one-output processor applying a double binary operator to two double signals.
 public record DoubleBinProcessor(Context context, DoubleBinaryOperator o) implements DefaultProcessor {
     public Signal.Type[] inType() {
         return new Signal.Type[] {Signal.Type.DOUBLE, Signal.Type.DOUBLE};

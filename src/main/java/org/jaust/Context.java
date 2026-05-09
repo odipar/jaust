@@ -6,6 +6,7 @@ import static org.jaust.processor.array.DefaultProcessorArray.of;
 
 import java.util.function.*;
 
+// Factory for creating processors. Holds the sample frequency and provides all primitive processor constructors.
 public interface Context {
     long frequency();
     

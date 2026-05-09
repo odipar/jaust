@@ -20,6 +20,7 @@ import org.jaust.signal.val.LongVal;
 
 import java.util.function.*;
 
+// Standard implementation of Context. Creates typed signal sources, binary operators, and Faust composition primitives.
 public record DefaultContext(long frequency) implements Context {
     
     public Processor valB(boolean d) {

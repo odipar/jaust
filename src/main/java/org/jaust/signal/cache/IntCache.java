@@ -3,6 +3,7 @@ package org.jaust.signal.cache;
 import org.jaust.Context;
 import org.jaust.signal.IntSignal;
 
+// Caches the last queried int value to avoid recomputing the same sample time twice.
 public class IntCache implements IntSignal {
     private final IntSignal s;
 

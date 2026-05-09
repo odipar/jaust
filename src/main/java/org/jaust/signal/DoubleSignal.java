@@ -2,6 +2,7 @@ package org.jaust.signal;
 
 import org.jaust.Signal;
 
+// A Signal producing double values; other types are scaled proportionally to their full range.
 public interface DoubleSignal extends Signal {
     default Type type() { return  Type.DOUBLE; }
     

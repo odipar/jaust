@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.Signal;
 import org.jaust.signal.SignalArray;
 
+// Identity processor that passes a single typed signal through unchanged.
 public record WireProcessor(Context context, Signal.Type type) implements DefaultProcessor {
     public Signal.Type[] inType() {
         return new Signal.Type[]{type};

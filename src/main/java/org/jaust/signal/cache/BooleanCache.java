@@ -3,6 +3,7 @@ package org.jaust.signal.cache;
 import org.jaust.Context;
 import org.jaust.signal.BooleanSignal;
 
+// Caches the last queried boolean value to avoid recomputing the same sample time twice.
 public class BooleanCache implements BooleanSignal {
     private final BooleanSignal s;
 

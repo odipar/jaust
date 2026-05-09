@@ -3,6 +3,7 @@ package org.jaust.signal;
 import org.jaust.Signal;
 import java.util.function.Function;
 
+// An ordered, immutable array of Signals with slice, append, prepend, and map operations.
 public interface SignalArray {
     int length();
     Signal at(int index);
