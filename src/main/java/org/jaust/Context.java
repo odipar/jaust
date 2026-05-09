@@ -1,6 +1,8 @@
 package org.jaust;
 
 import org.jaust.processor.ProcessorArray;
+import static org.jaust.processor.array.DefaultProcessorArray.of;
+
 import java.util.function.*;
 
 public interface Context {
@@ -27,6 +29,9 @@ public interface Context {
     Processor seq(ProcessorArray processors);
     Processor div(Processor p1, Processor p2);
     Processor rec(Processor p1, Processor p2);
+    
+    default Processor par(Processor... processors) { return par(of(processors)); }
+    default Processor seq(Processor... processors) { return seq(of(processors)); }
     
     default Processor addD() { return binD((a, b) -> a + b); }
     default Processor mulD() { return binD((a, b) -> a * b); }

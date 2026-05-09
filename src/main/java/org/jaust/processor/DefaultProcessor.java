@@ -1,15 +1,16 @@
 package org.jaust.processor;
 
 import org.jaust.Processor;
+import static org.jaust.processor.array.DefaultProcessorArray.of;
 
 public interface DefaultProcessor extends Processor {
     
     // default implementations for combinators
-    default Processor par(ProcessorArray processors) {
-        return context().par(processors.prepend(this));
+    default Processor par(Processor... processors) {
+        return context().par(of(processors).prepend(this));
     }
-    default Processor seq(ProcessorArray processors) {
-        return context().seq(processors.prepend(this));
+    default Processor seq(Processor... processors) {
+        return context().seq(of(processors).prepend(this));
     }
     default Processor div(Processor processor) {
         return context().div(this, processor);

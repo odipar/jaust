@@ -15,8 +15,8 @@ public interface Processor {
     default SignalArray apply() { return apply(DefaultArray.a()); }
     
     // fluent api (should be implemented with the context combinators)
-    Processor par(ProcessorArray processors);
-    Processor seq(ProcessorArray processors);
+    Processor par(Processor... processors);
+    Processor seq(Processor... processors);
     Processor div(Processor processor);
     Processor rec(Processor processor);
 }

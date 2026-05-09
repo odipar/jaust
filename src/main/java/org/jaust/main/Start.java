@@ -18,8 +18,8 @@ public class Start {
         
         var p =
             t1.
-            par(DefaultProcessorArray.of(t2)).
-            seq(DefaultProcessorArray.of(add));
+            par(t2).
+            seq(add);
         
         var s = p.apply().at(0);
         
@@ -38,7 +38,7 @@ public class Start {
         var p1 = c.addD();
         var p2 = c.cache(c.wire(Type.DOUBLE));
         var rec = c.rec(p1, p2);
-        var combined = c.seq(DefaultProcessorArray.of(c.valD(1.0), rec));
+        var combined = c.seq(c.valD(1.0), rec);
         var s = combined.apply().at(0);
         double sum = 0.0;
         
