@@ -26,4 +26,9 @@ public interface Context {
     Processor seq(Processor... processors);
     Processor div(Processor p1, Processor p2);
     Processor rec(Processor p1, Processor p2);
+    
+    default Processor addD() { return binD((a, b) -> a + b); }
+    default Processor mulD() { return binD((a, b) -> a * b); }
+    default Processor subD() { return binD((a, b) -> a - b); }
+    default Processor divD() { return binD((a, b) -> a / b); }
 }
