@@ -82,10 +82,11 @@ public record DefaultContext(long frequency) implements Context {
     public Processor rec(Processor p1, Processor p2) {
         return new RecProcessor(p1, p2);
     }
-    public Processor up(Processor source) {
-        return new UpProcessor(this, source);
-    }
-    public Processor down(Processor source) {
+    public Processor resample(Processor source) {
+        long srcFreq = source.context().frequency();
+        long tgtFreq = this.frequency();
+        if (srcFreq == tgtFreq) return source;
+        if (srcFreq < tgtFreq) return new UpProcessor(this, source);
         return new DownProcessor(this, source);
     }
 }

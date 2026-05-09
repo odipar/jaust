@@ -10,14 +10,14 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for the upsampling combinator {@code Context#up(Processor)}.
+ * Tests for the upsampling path of {@code Context#resample(Processor)}.
  *
- * <p>For an integer ratio (tgtFreq = k * srcFreq), source samples appear at every k-th
- * target position and zeros fill the rest. For a rational ratio p/q (in lowest terms),
- * the upsampler distributes source samples optimally: each source sample i is placed at
- * target position round(i * tgtFreq / srcFreq), computed with integer arithmetic to
- * avoid floating-point imprecision. A target position t that doesn't own any source
- * sample returns zero (zero-stuffing). This ensures exactly srcFreq non-zero values
+ * <p>When the target context frequency is greater than the source frequency, resample
+ * delegates to UpProcessor (zero-stuffing). For an integer ratio (tgtFreq = k * srcFreq),
+ * source samples appear at every k-th target position and zeros fill the rest. For a rational
+ * ratio p/q (in lowest terms), the upsampler distributes source samples optimally: each source
+ * sample i is placed at target position round(i * tgtFreq / srcFreq), computed with integer
+ * arithmetic to avoid floating-point imprecision. This ensures exactly srcFreq non-zero values
  * occur every tgtFreq target samples, even when srcFreq and tgtFreq are coprime primes.</p>
  */
 class UpProcessorTest {
@@ -29,9 +29,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(2);   // 2 Hz target  (ratio = 2)
 
         Processor srcProc = src.valD(3.0);
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         // t=0 → srcTime=0 → 3.0
         assertEquals(3.0, out.at(0).doubleAt(0), 1e-9);
         // t=1 → not aligned → 0.0
@@ -49,9 +49,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(2);
 
         Processor srcProc = src.genI(t -> (int) t); // 0, 1, 2, 3, …
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertEquals(0, out.at(0).intAt(0)); // srcTime 0 → 0
         assertEquals(0, out.at(0).intAt(1)); // not aligned → 0
         assertEquals(1, out.at(0).intAt(2)); // srcTime 1 → 1
@@ -66,9 +66,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(2);
 
         Processor srcProc = src.genL(t -> t * 10L);
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertEquals(0L,  out.at(0).longAt(0));
         assertEquals(0L,  out.at(0).longAt(1));
         assertEquals(10L, out.at(0).longAt(2));
@@ -83,24 +83,33 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(2);
 
         Processor srcProc = src.valB(true);
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertTrue(out.at(0).boolAt(0));   // aligned → source value (true)
         assertFalse(out.at(0).boolAt(1));  // non-aligned → false (zero)
         assertTrue(out.at(0).boolAt(2));   // aligned → source value (true)
         assertFalse(out.at(0).boolAt(3));  // non-aligned → false (zero)
     }
 
-    /** Upsample with same frequency (1:1) should return identical values. */
+    /** Resample with same frequency (1:1) is identity: returns the source processor unchanged for all signal types. */
     @Test
-    void upsampleDouble_sameFrequency_identity() {
+    void resampleDouble_sameFrequency_identity() {
         Context ctx = new DefaultContext(44100);
 
-        Processor srcProc = ctx.genD(t -> (double) t);
-        Processor up = ctx.up(srcProc);
+        Processor srcD = ctx.genD(t -> (double) t);
+        assertSame(srcD, ctx.resample(srcD)); // DOUBLE: same freq → identity (no wrapping)
 
-        SignalArray out = up.apply();
+        Processor srcI = ctx.genI(t -> (int) t);
+        assertSame(srcI, ctx.resample(srcI)); // INT
+
+        Processor srcL = ctx.genL(t -> t);
+        assertSame(srcL, ctx.resample(srcL)); // LONG
+
+        Processor srcB = ctx.genB(t -> t % 2 == 0);
+        assertSame(srcB, ctx.resample(srcB)); // BOOL
+
+        SignalArray out = ctx.resample(srcD).apply();
         for (long t = 0; t < 10; t++) {
             assertEquals((double) t, out.at(0).doubleAt(t), 1e-9);
         }
@@ -112,10 +121,10 @@ class UpProcessorTest {
         Context src = new DefaultContext(1);
         Context tgt = new DefaultContext(4);
 
-        assertArrayEquals(new Signal.Type[]{Signal.Type.DOUBLE}, tgt.up(src.valD(0.0)).outType());
-        assertArrayEquals(new Signal.Type[]{Signal.Type.INT},    tgt.up(src.valI(0)).outType());
-        assertArrayEquals(new Signal.Type[]{Signal.Type.LONG},   tgt.up(src.valL(0L)).outType());
-        assertArrayEquals(new Signal.Type[]{Signal.Type.BOOL},   tgt.up(src.valB(false)).outType());
+        assertArrayEquals(new Signal.Type[]{Signal.Type.DOUBLE}, tgt.resample(src.valD(0.0)).outType());
+        assertArrayEquals(new Signal.Type[]{Signal.Type.INT},    tgt.resample(src.valI(0)).outType());
+        assertArrayEquals(new Signal.Type[]{Signal.Type.LONG},   tgt.resample(src.valL(0L)).outType());
+        assertArrayEquals(new Signal.Type[]{Signal.Type.BOOL},   tgt.resample(src.valB(false)).outType());
     }
 
     /** Input type is empty (no external inputs; source is applied internally). */
@@ -123,7 +132,7 @@ class UpProcessorTest {
     void inTypeIsEmpty() {
         Context src = new DefaultContext(1);
         Context tgt = new DefaultContext(2);
-        assertArrayEquals(new Signal.Type[]{}, tgt.up(src.valD(1.0)).inType());
+        assertArrayEquals(new Signal.Type[]{}, tgt.resample(src.valD(1.0)).inType());
     }
 
     /**
@@ -137,9 +146,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(5);   // 5 Hz target (prime)
 
         Processor srcProc = src.genD(t -> t + 1.0); // 1.0, 2.0, 3.0, ...
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertEquals(1.0, out.at(0).doubleAt(0), 1e-9); // src[0]
         assertEquals(0.0, out.at(0).doubleAt(1), 1e-9); // zero
         assertEquals(2.0, out.at(0).doubleAt(2), 1e-9); // src[1]
@@ -157,9 +166,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(5);
 
         Processor srcProc = src.genI(t -> (int)(t + 1)); // 1, 2, 3, ...
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertEquals(1, out.at(0).intAt(0)); // src[0]
         assertEquals(0, out.at(0).intAt(1)); // zero
         assertEquals(2, out.at(0).intAt(2)); // src[1]
@@ -176,9 +185,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(5);
 
         Processor srcProc = src.genL(t -> (t + 1) * 10L); // 10, 20, 30, ...
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertEquals(10L, out.at(0).longAt(0)); // src[0]
         assertEquals(0L,  out.at(0).longAt(1)); // zero
         assertEquals(20L, out.at(0).longAt(2)); // src[1]
@@ -196,9 +205,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(5);
 
         Processor srcProc = src.genB(t -> t % 2 == 0); // true, false, true, false, ...
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         assertTrue(out.at(0).boolAt(0));   // src[0] = true
         assertFalse(out.at(0).boolAt(1)); // zero → false
         assertFalse(out.at(0).boolAt(2)); // src[1] = false
@@ -216,9 +225,9 @@ class UpProcessorTest {
         Context tgt = new DefaultContext(5);
 
         Processor srcProc = src.valD(1.0);
-        Processor up = tgt.up(srcProc);
+        Processor resampled = tgt.resample(srcProc);
 
-        SignalArray out = up.apply();
+        SignalArray out = resampled.apply();
         long nonZeroCount = 0;
         for (long t = 0; t < 5; t++) {
             if (out.at(0).doubleAt(t) != 0.0) nonZeroCount++;
