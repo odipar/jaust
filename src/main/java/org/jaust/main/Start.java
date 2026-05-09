@@ -36,10 +36,12 @@ public class Start {
     }
     
     static void example2(Context c) {
+        // Feedback loop: out(t) = out(t-1) + 1.0
+        // with cache to avoid redundant computation of the feedback signal
+        
         var p1 = c.binD(Double::sum);
         var p2 = c.cache(c.wire(Type.DOUBLE));
         var rec = c.rec(p1, p2);
-        
         var combined = c.seq(c.valD(1.0), rec);
         var s = combined.apply()[0];
         double sum = 0.0;
