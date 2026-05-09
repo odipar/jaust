@@ -39,6 +39,7 @@ public record DefaultContext(long frequency) implements Context {
         return new OutProcessor(new LongGen(this, sup));
     }
     public Processor genB(LongPredicate sup) {
+        // TODO
         return null;
     }
     public Processor genD(LongToDoubleFunction sup) {
