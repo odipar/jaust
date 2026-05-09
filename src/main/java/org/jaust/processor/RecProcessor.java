@@ -46,24 +46,19 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
         int q = p1.outType().length;  // number of p1 outputs (= p2 inputs)
         int r = p2.outType().length;  // number of feedback signals (= p2 outputs)
         
-        RecDoubleSignal[] p2InSig = new RecDoubleSignal[q];
+        RecDoubleSignal[] recSignals = new RecDoubleSignal[q];
         for (int i = 0; i < q; i++) {
             // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
-            p2InSig[i] = new RecDoubleSignal();
+            recSignals[i] = new RecDoubleSignal();
         }
 
-        SignalArray p2OutSig = p2.apply(DefaultArray.a(p2InSig));
-        Signal[] p2Out = p2OutSig.toArray();
-        Signal[] ext = externalSignals.toArray();
-        Signal[] p1InArr = new Signal[r + ext.length];
-        System.arraycopy(p2Out, 0, p1InArr, 0, r);
-        System.arraycopy(ext,   0, p1InArr, r, ext.length);
-        SignalArray p1OutSig = p1.apply(DefaultArray.a(p1InArr));
+        SignalArray p2OutSig = p2.apply(DefaultArray.a(recSignals));
+        SignalArray p1OutSig = p1.apply(p2OutSig.slice(0, r).append(externalSignals));
         
-        // Close the loop: p2InSig[i].rec points to p1OutSig[i] so that p2InSig can recurse.
+        // Close the loop: recSignals[i].rec points to p1OutSig[i] so that recSignals can recurse.
         for (int i = 0; i < q; i++) {
             // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
-            (p2InSig[i]).rec = (DoubleSignal) p1OutSig.at(i);
+            recSignals[i].rec = (DoubleSignal) p1OutSig.at(i);
         }
         return p1OutSig;
     }

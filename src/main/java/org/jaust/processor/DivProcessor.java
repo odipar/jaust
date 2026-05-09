@@ -25,10 +25,6 @@ public record DivProcessor(Processor p1, Processor p2) implements DefaultProcess
         SignalArray s1 = p1.apply(signal);
         int n = s1.length();
         int m = p2.inType().length;
-        Signal[] expanded = new Signal[m];
-        for (int i = 0; i < m; i++) {
-            expanded[i] = s1.at(i % n);
-        }
-        return p2.apply(DefaultArray.a(expanded));
+        return p2.apply(DefaultArray.generate(m, i -> s1.at(i % n)));
     }
 }
