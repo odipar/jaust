@@ -28,26 +28,26 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
 
     public Signal.Type[] outType() { return p1.outType(); }
 
+    private static class RecDoubleSignal implements DoubleSignal {
+        // to be set after p1OutSig is computed, so that doubleAt can recurse back to p1OutSig
+        private DoubleSignal rec;
+        
+        public Context context() { return rec.context(); }
+        
+        public double doubleAt(long time) {
+            if (time <= 0) return 0.0;
+            return rec.doubleAt(time - 1);
+        }
+    }
+    
     public Signal[] apply(Signal... externalSignals) {
         int q = p1.outType().length;  // number of p1 outputs (= p2 inputs)
         int r = p2.outType().length;  // number of feedback signals (= p2 outputs)
-        Context ctx = context();
-
-        // resultRef is populated after p1OutSig is computed; p2InSig captures it by reference
-        // so that the circular dependency is resolved lazily at query time.
-        Signal[] resultRef = new Signal[q];
-
-        // p2InSig[i](t) = resultRef[i](t-1), i.e. one-sample-delayed output of p1.
-        // At t=0 the feedback is 0 (no previous output exists).
-        Signal[] p2InSig = new Signal[q];
+        
+        RecDoubleSignal[] p2InSig = new RecDoubleSignal[q];
         for (int i = 0; i < q; i++) {
-            final int fi = i;
-            p2InSig[fi] = new DoubleSignal() {
-                public Context context() { return ctx; }
-                public double doubleAt(long time) {
-                    return time <= 0 ? 0.0 : resultRef[fi].doubleAt(time - 1);
-                }
-            };
+            // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
+            p2InSig[i] = new RecDoubleSignal();
         }
 
         Signal[] p2OutSig = p2.apply(p2InSig);
@@ -55,10 +55,12 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
         System.arraycopy(p2OutSig,        0, p1InSig, 0, r);
         System.arraycopy(externalSignals, 0, p1InSig, r, externalSignals.length);
         Signal[] p1OutSig = p1.apply(p1InSig);
-
-        // Close the loop: resultRef[i] points to p1OutSig[i] so that p2InSig can recurse.
-        System.arraycopy(p1OutSig, 0, resultRef, 0, q);
-
+        
+        // Close the loop: p2InSig[i].rec points to p1OutSig[i] so that p2InSig can recurse.
+        for (int i = 0; i < q; i++) {
+            // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
+            (p2InSig[i]).rec = (DoubleSignal) p1OutSig[i];
+        }
         return p1OutSig;
     }
 }

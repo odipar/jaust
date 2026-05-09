@@ -20,6 +20,7 @@ public interface Context {
     Processor binL(LongBinaryOperator op);
     
     Processor wire(Signal.Type type);
+    Processor cache(Processor p);
     
     Processor par(Processor... processor);
     Processor seq(Processor... processors);

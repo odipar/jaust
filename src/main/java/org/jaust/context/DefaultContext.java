@@ -52,6 +52,9 @@ public record DefaultContext(long frequency) implements Context {
     public Processor wire(Signal.Type type) {
         return new WireProcessor(this, type);
     }
+    public Processor cache(Processor p) {
+        return new CacheProcessor(p);
+    }
     public Processor binD(DoubleBinaryOperator op) {
         return new DoubleBinProcessor(this, op);
     }

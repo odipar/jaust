@@ -37,7 +37,7 @@ public class Start {
     
     static void example2(Context c) {
         var p1 = c.binD(Double::sum);
-        var p2 = c.wire(Type.DOUBLE);
+        var p2 = c.cache(c.wire(Type.DOUBLE));
         var rec = c.rec(p1, p2);
         
         var combined = c.seq(c.valD(1.0), rec);
