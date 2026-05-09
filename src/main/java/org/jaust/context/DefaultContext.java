@@ -2,6 +2,7 @@ package org.jaust.context;
 
 import org.jaust.Context;
 import org.jaust.Processor;
+import org.jaust.Signal;
 import org.jaust.processor.*;
 import org.jaust.processor.bin.DoubleBinProcessor;
 import org.jaust.processor.bin.IntBinProcessor;
@@ -47,6 +48,9 @@ public record DefaultContext(long frequency) implements Context {
     }
     public Processor binL(LongBinaryOperator op) {
         return new LongBinProcessor(this, op);
+    }
+    public Processor wire(Signal.Type type) {
+        return new WireProcessor(this, type);
     }
     public Processor binD(DoubleBinaryOperator op) {
         return new DoubleBinProcessor(this, op);

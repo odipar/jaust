@@ -19,6 +19,8 @@ public interface Context {
     Processor binI(IntBinaryOperator op);
     Processor binL(LongBinaryOperator op);
     
+    Processor wire(Signal.Type type);
+    
     Processor par(Processor... processor);
     Processor seq(Processor... processors);
     Processor div(Processor p1, Processor p2);
