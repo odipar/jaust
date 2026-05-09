@@ -4,6 +4,8 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.signal.DoubleSignal;
+import org.jaust.signal.SignalArray;
+import org.jaust.signal.array.DefaultArray;
 
 import java.util.Arrays;
 
@@ -40,7 +42,7 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
         }
     }
     
-    public Signal[] apply(Signal... externalSignals) {
+    public SignalArray apply(SignalArray externalSignals) {
         int q = p1.outType().length;  // number of p1 outputs (= p2 inputs)
         int r = p2.outType().length;  // number of feedback signals (= p2 outputs)
         
@@ -50,16 +52,18 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
             p2InSig[i] = new RecDoubleSignal();
         }
 
-        Signal[] p2OutSig = p2.apply(p2InSig);
-        Signal[] p1InSig  = new Signal[r + externalSignals.length];
-        System.arraycopy(p2OutSig,        0, p1InSig, 0, r);
-        System.arraycopy(externalSignals, 0, p1InSig, r, externalSignals.length);
-        Signal[] p1OutSig = p1.apply(p1InSig);
+        SignalArray p2OutSig = p2.apply(DefaultArray.a(p2InSig));
+        Signal[] p2Out = p2OutSig.toArray();
+        Signal[] ext = externalSignals.toArray();
+        Signal[] p1InArr = new Signal[r + ext.length];
+        System.arraycopy(p2Out, 0, p1InArr, 0, r);
+        System.arraycopy(ext,   0, p1InArr, r, ext.length);
+        SignalArray p1OutSig = p1.apply(DefaultArray.a(p1InArr));
         
         // Close the loop: p2InSig[i].rec points to p1OutSig[i] so that p2InSig can recurse.
         for (int i = 0; i < q; i++) {
             // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
-            (p2InSig[i]).rec = (DoubleSignal) p1OutSig[i];
+            (p2InSig[i]).rec = (DoubleSignal) p1OutSig.at(i);
         }
         return p1OutSig;
     }

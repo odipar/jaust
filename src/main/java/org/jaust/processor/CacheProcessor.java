@@ -3,6 +3,8 @@ package org.jaust.processor;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.signal.DoubleSignal;
+import org.jaust.signal.SignalArray;
+import org.jaust.signal.array.DefaultArray;
 import org.jaust.signal.cache.DoubleCache;
 
 public record CacheProcessor(Processor processor) implements DefaultProcessor {
@@ -19,12 +21,13 @@ public record CacheProcessor(Processor processor) implements DefaultProcessor {
         return processor.outType();
     }
     
-    public org.jaust.Signal[] apply(org.jaust.Signal... signal) {
-        Signal[] result = processor.apply(signal);
-        Signal[] wrapped = new Signal[result.length];
+    public SignalArray apply(SignalArray signal) {
+        SignalArray result = processor.apply(signal);
+        int len = result.length();
+        Signal[] wrapped = new Signal[len];
         
-        for (int i = 0; i < result.length; i++) {
-            var s =  result[i];
+        for (int i = 0; i < len; i++) {
+            var s = result.at(i);
             var wr = switch (s) {
                 // TODO: add non-double signal types
                 case DoubleSignal ds -> new DoubleCache(ds);
@@ -32,6 +35,6 @@ public record CacheProcessor(Processor processor) implements DefaultProcessor {
             };
             wrapped[i] = wr;
         }
-        return wrapped;
+        return DefaultArray.a(wrapped);
     }
 }

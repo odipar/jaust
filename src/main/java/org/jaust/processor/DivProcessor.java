@@ -3,6 +3,8 @@ package org.jaust.processor;
 import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
+import org.jaust.signal.SignalArray;
+import org.jaust.signal.array.DefaultArray;
 
 /**
  * Implements the Faust split composition operator ({@code <:}).
@@ -19,14 +21,14 @@ public record DivProcessor(Processor p1, Processor p2) implements DefaultProcess
 
     public Signal.Type[] outType() { return p2.outType(); }
 
-    public Signal[] apply(Signal... signal) {
-        Signal[] s1 = p1.apply(signal);
-        int n = s1.length;
+    public SignalArray apply(SignalArray signal) {
+        SignalArray s1 = p1.apply(signal);
+        int n = s1.length();
         int m = p2.inType().length;
         Signal[] expanded = new Signal[m];
         for (int i = 0; i < m; i++) {
-            expanded[i] = s1[i % n];
+            expanded[i] = s1.at(i % n);
         }
-        return p2.apply(expanded);
+        return p2.apply(DefaultArray.a(expanded));
     }
 }

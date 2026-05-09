@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.context.DefaultContext;
+import org.jaust.signal.SignalArray;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,9 +37,9 @@ class DivProcessorTest {
         assertArrayEquals(p1.inType(), div.inType());
         assertArrayEquals(p2.outType(), div.outType());
 
-        Signal[] out = div.apply();
-        assertEquals(6.0, out[0].doubleAt(0), 1e-9);
-        assertEquals(6.0, out[0].doubleAt(1), 1e-9);
+        SignalArray out = div.apply();
+        assertEquals(6.0, out.at(0).doubleAt(0), 1e-9);
+        assertEquals(6.0, out.at(0).doubleAt(1), 1e-9);
     }
 
     /**
@@ -57,10 +58,10 @@ class DivProcessorTest {
 
         Processor div = ctx.div(p1, p2);
 
-        Signal[] out = div.apply();
-        assertEquals(2, out.length);
-        assertEquals(3.0, out[0].doubleAt(0), 1e-9);     // 1.0 + 2.0
-        assertEquals(3.0, out[1].doubleAt(0), 1e-9);     // 1.0 + 2.0
+        SignalArray out = div.apply();
+        assertEquals(2, out.length());
+        assertEquals(3.0, out.at(0).doubleAt(0), 1e-9);     // 1.0 + 2.0
+        assertEquals(3.0, out.at(1).doubleAt(0), 1e-9);     // 1.0 + 2.0
     }
 
     /**
@@ -72,8 +73,8 @@ class DivProcessorTest {
         Processor p2 = ctx.binD(Double::sum);
         Processor div = p1.div(p2);
 
-        Signal[] out = div.apply();
-        assertEquals(10.0, out[0].doubleAt(0), 1e-9);
+        SignalArray out = div.apply();
+        assertEquals(10.0, out.at(0).doubleAt(0), 1e-9);
     }
 
     /**
