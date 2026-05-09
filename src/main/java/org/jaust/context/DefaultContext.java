@@ -1,11 +1,10 @@
 package org.jaust.context;
 
-import org.jaust.BooleanBinaryOperator;
+import org.jaust.operator.BooleanBinaryOperator;
 import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.processor.*;
-import org.jaust.processor.array.DefaultProcessorArray;
 import org.jaust.processor.bin.BoolBinProcessor;
 import org.jaust.processor.bin.DoubleBinProcessor;
 import org.jaust.processor.bin.IntBinProcessor;

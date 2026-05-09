@@ -1,5 +1,6 @@
 package org.jaust;
 
+import org.jaust.operator.BooleanBinaryOperator;
 import org.jaust.processor.ProcessorArray;
 import static org.jaust.processor.array.DefaultProcessorArray.of;
 

@@ -1,6 +1,6 @@
 package org.jaust.processor.bin;
 
-import org.jaust.BooleanBinaryOperator;
+import org.jaust.operator.BooleanBinaryOperator;
 import org.jaust.Context;
 import org.jaust.Signal;
 import org.jaust.processor.DefaultProcessor;

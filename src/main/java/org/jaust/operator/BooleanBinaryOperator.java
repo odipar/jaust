@@ -1,4 +1,4 @@
-package org.jaust;
+package org.jaust.operator;
 
 @FunctionalInterface
 public interface BooleanBinaryOperator {
