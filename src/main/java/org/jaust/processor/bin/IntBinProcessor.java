@@ -10,10 +10,10 @@ import java.util.function.IntBinaryOperator;
 
 public record IntBinProcessor(Context context, IntBinaryOperator o) implements DefaultProcessor {
     public Signal.Type[] inType() {
-        return new Signal.Type[] {Signal.Type.DOUBLE, Signal.Type.DOUBLE};
+        return new Signal.Type[] {Signal.Type.INT, Signal.Type.INT};
     }
     public Signal.Type[] outType() {
-        return new Signal.Type[] {Signal.Type.DOUBLE};
+        return new Signal.Type[] {Signal.Type.INT};
     }
     public SignalArray apply(SignalArray signal) {
         var _1 = signal.at(0);
