@@ -15,6 +15,9 @@ public interface DefaultProcessor extends Processor {
     default Processor div(Processor processor) {
         return context().div(this, processor);
     }
+    default Processor avg(Processor processor) {
+        return context().avg(this, processor);
+    }
     default Processor rec(Processor processor) {
         return context().rec(this, processor);
     }

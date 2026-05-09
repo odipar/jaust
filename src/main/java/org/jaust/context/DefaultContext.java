@@ -68,6 +68,10 @@ public record DefaultContext(long frequency) implements Context {
     public Processor div(Processor p1, Processor p2) {
         return new DivProcessor(p1, p2);
     }
+    public Processor avg(Processor p1, Processor p2) {
+        // TODO
+        return null;
+    }
     public Processor rec(Processor p1, Processor p2) {
         return new RecProcessor(p1, p2);
     }

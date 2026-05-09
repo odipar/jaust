@@ -25,9 +25,16 @@ public interface Context {
     Processor wire(Signal.Type type);
     Processor cache(Processor p);
     
+    // Faust-style composition operators (, : <: >: ~)
+    // par (,)
     Processor par(ProcessorArray processors);
+    // seq (:)
     Processor seq(ProcessorArray processors);
+    // div (<: split)
     Processor div(Processor p1, Processor p2);
+    // avg (>: merge)
+    Processor avg(Processor p1, Processor p2);
+    // rec (~)
     Processor rec(Processor p1, Processor p2);
     
     default Processor par(Processor... processors) { return par(of(processors)); }
