@@ -3,7 +3,10 @@ package org.jaust.processor;
 import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
+import org.jaust.signal.BooleanSignal;
 import org.jaust.signal.DoubleSignal;
+import org.jaust.signal.IntSignal;
+import org.jaust.signal.LongSignal;
 import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
@@ -30,6 +33,39 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
 
     public Signal.Type[] outType() { return p1.outType(); }
 
+    private static class RecBooleanSignal implements BooleanSignal {
+        private BooleanSignal rec;
+
+        public Context context() { return rec.context(); }
+
+        public boolean boolAt(long time) {
+            if (time <= 0) return false;
+            return rec.boolAt(time - 1);
+        }
+    }
+
+    private static class RecIntSignal implements IntSignal {
+        private IntSignal rec;
+
+        public Context context() { return rec.context(); }
+
+        public int intAt(long time) {
+            if (time <= 0) return 0;
+            return rec.intAt(time - 1);
+        }
+    }
+
+    private static class RecLongSignal implements LongSignal {
+        private LongSignal rec;
+
+        public Context context() { return rec.context(); }
+
+        public long longAt(long time) {
+            if (time <= 0) return 0L;
+            return rec.longAt(time - 1);
+        }
+    }
+
     private static class RecDoubleSignal implements DoubleSignal {
         // to be set after p1OutSig is computed, so that doubleAt can recurse back to p1OutSig
         private DoubleSignal rec;
@@ -46,19 +82,28 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
         int q = p1.outType().length;  // number of p1 outputs (= p2 inputs)
         int r = p2.outType().length;  // number of feedback signals (= p2 outputs)
         
-        RecDoubleSignal[] recSignals = new RecDoubleSignal[q];
+        Signal[] recSignals = new Signal[q];
         for (int i = 0; i < q; i++) {
-            // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
-            recSignals[i] = new RecDoubleSignal();
+            recSignals[i] = switch (p1.outType()[i]) {
+                case BOOL   -> new RecBooleanSignal();
+                case INT    -> new RecIntSignal();
+                case LONG   -> new RecLongSignal();
+                case DOUBLE -> new RecDoubleSignal();
+            };
         }
 
         SignalArray p2OutSig = p2.apply(DefaultArray.a(recSignals));
         SignalArray p1OutSig = p1.apply(p2OutSig.slice(0, r).append(externalSignals));
         
-        // Close the loop: recSignals[i].rec points to p1OutSig[i] so that recSignals can recurse.
+        // Close the loop: each recSignal points back to the corresponding p1OutSig signal.
         for (int i = 0; i < q; i++) {
-            // TODO: handle non-DOUBLE signals (currently only supports DOUBLE)
-            recSignals[i].rec = (DoubleSignal) p1OutSig.at(i);
+            switch (recSignals[i]) {
+                case RecBooleanSignal rbs -> rbs.rec = (BooleanSignal) p1OutSig.at(i);
+                case RecIntSignal    ris  -> ris.rec = (IntSignal)     p1OutSig.at(i);
+                case RecLongSignal   rls  -> rls.rec = (LongSignal)    p1OutSig.at(i);
+                case RecDoubleSignal rds  -> rds.rec = (DoubleSignal)  p1OutSig.at(i);
+                default -> throw new UnsupportedOperationException("Unsupported rec signal type: " + recSignals[i].getClass().getName());
+            }
         }
         return p1OutSig;
     }

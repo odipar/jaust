@@ -1,13 +1,16 @@
 package org.jaust.context;
 
+import org.jaust.BooleanBinaryOperator;
 import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.processor.*;
 import org.jaust.processor.array.DefaultProcessorArray;
+import org.jaust.processor.bin.BoolBinProcessor;
 import org.jaust.processor.bin.DoubleBinProcessor;
 import org.jaust.processor.bin.IntBinProcessor;
 import org.jaust.processor.bin.LongBinProcessor;
+import org.jaust.signal.gen.BoolGen;
 import org.jaust.signal.gen.DoubleGen;
 import org.jaust.signal.gen.IntGen;
 import org.jaust.signal.gen.LongGen;
@@ -39,8 +42,7 @@ public record DefaultContext(long frequency) implements Context {
         return new OutProcessor(new LongGen(this, sup));
     }
     public Processor genB(LongPredicate sup) {
-        // TODO
-        return null;
+        return new OutProcessor(new BoolGen(this, sup));
     }
     public Processor genD(LongToDoubleFunction sup) {
         return new OutProcessor(new DoubleGen(this, sup));
@@ -50,6 +52,9 @@ public record DefaultContext(long frequency) implements Context {
     }
     public Processor binL(LongBinaryOperator op) {
         return new LongBinProcessor(this, op);
+    }
+    public Processor binB(BooleanBinaryOperator op) {
+        return new BoolBinProcessor(this, op);
     }
     public Processor wire(Signal.Type type) {
         return new WireProcessor(this, type);
@@ -70,8 +75,7 @@ public record DefaultContext(long frequency) implements Context {
         return new DivProcessor(p1, p2);
     }
     public Processor avg(Processor p1, Processor p2) {
-        // TODO
-        return null;
+        return new AvgProcessor(p1, p2);
     }
     public Processor rec(Processor p1, Processor p2) {
         return new RecProcessor(p1, p2);

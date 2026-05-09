@@ -21,6 +21,7 @@ public interface Context {
     Processor binD(DoubleBinaryOperator op);
     Processor binI(IntBinaryOperator op);
     Processor binL(LongBinaryOperator op);
+    Processor binB(BooleanBinaryOperator op);
     
     Processor wire(Signal.Type type);
     Processor cache(Processor p);

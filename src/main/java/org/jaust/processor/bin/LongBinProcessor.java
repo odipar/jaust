@@ -11,10 +11,10 @@ import java.util.function.LongBinaryOperator;
 
 public record LongBinProcessor(Context context,LongBinaryOperator o) implements DefaultProcessor {
     public Signal.Type[] inType() {
-        return new Signal.Type[] {Signal.Type.DOUBLE, Signal.Type.DOUBLE};
+        return new Signal.Type[] {Signal.Type.LONG, Signal.Type.LONG};
     }
     public Signal.Type[] outType() {
-        return new Signal.Type[] {Signal.Type.DOUBLE};
+        return new Signal.Type[] {Signal.Type.LONG};
     }
     public SignalArray apply(SignalArray signal) {
         var _1 = signal.at(0);
