@@ -130,4 +130,23 @@ class RecProcessorTest {
         assertEquals(1, rec.outType().length);
         assertEquals(Signal.Type.DOUBLE, rec.outType()[0]);
     }
+
+    /**
+     * Signals must honour the Signal contract: querying an earlier time after a later time
+     * must still return the correct value (no reliance on monotonically-increasing queries).
+     * <pre>
+     *   accumulator with external = 1.0: out(t) = t + 1
+     * </pre>
+     * Query t=9 first, then t=0 – both must be correct.
+     */
+    @Test
+    void outOfOrderQuery_earlierTimeAfterLaterTime() {
+        Processor rec      = ctx.rec(ctx.binD(Double::sum), wire());
+        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+
+        Signal[] out = combined.apply();
+        assertEquals(10.0, out[0].doubleAt(9), 1e-9);  // query t=9 first
+        assertEquals(1.0,  out[0].doubleAt(0), 1e-9);  // then query t=0 (must not use cached t=9)
+        assertEquals(5.0,  out[0].doubleAt(4), 1e-9);  // then an intermediate time
+    }
 }

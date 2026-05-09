@@ -14,8 +14,8 @@ import java.util.Arrays;
  * {@code r} outputs ({@code r <= p}). The combined block has {@code p - r} inputs and {@code q}
  * outputs. p2's outputs are fed back to p1's first {@code r} inputs with a one-sample delay.
  * <p>
- * Time is assumed to be queried sequentially (t = 0, 1, 2, …). Out-of-order queries will
- * return the last cached value.
+ * Implemented using actual recursion with no hidden state. Signals may be queried at any time
+ * in any order; each query is computed purely from the input signals and prior recursive values.
  */
 public record RecProcessor(Processor p1, Processor p2) implements DefaultProcessor {
 
@@ -33,16 +33,20 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
         int r = p2.outType().length;  // number of feedback signals (= p2 outputs)
         Context ctx = context();
 
-        double[] feedback = new double[q];  // one-sample-delayed p1 outputs fed into p2
-        double[] current  = new double[q];  // p1 outputs at the last computed time
-        long[]   lastTime = {-1};
+        // resultRef is populated after p1OutSig is computed; p2InSig captures it by reference
+        // so that the circular dependency is resolved lazily at query time.
+        Signal[] resultRef = new Signal[q];
 
+        // p2InSig[i](t) = resultRef[i](t-1), i.e. one-sample-delayed output of p1.
+        // At t=0 the feedback is 0 (no previous output exists).
         Signal[] p2InSig = new Signal[q];
         for (int i = 0; i < q; i++) {
             final int fi = i;
             p2InSig[fi] = new DoubleSignal() {
                 public Context context() { return ctx; }
-                public double doubleAt(long time) { return feedback[fi]; }
+                public double doubleAt(long time) {
+                    return time <= 0 ? 0.0 : resultRef[fi].doubleAt(time - 1);
+                }
             };
         }
 
@@ -52,23 +56,9 @@ public record RecProcessor(Processor p1, Processor p2) implements DefaultProcess
         System.arraycopy(externalSignals, 0, p1InSig, r, externalSignals.length);
         Signal[] p1OutSig = p1.apply(p1InSig);
 
-        Signal[] result = new Signal[q];
-        for (int i = 0; i < q; i++) {
-            final int fi = i;
-            result[fi] = new DoubleSignal() {
-                public Context context() { return ctx; }
-                public double doubleAt(long time) {
-                    if (time > lastTime[0]) {
-                        for (long t = lastTime[0] + 1; t <= time; t++) {
-                            for (int j = 0; j < q; j++) current[j] = p1OutSig[j].doubleAt(t);
-                            System.arraycopy(current, 0, feedback, 0, q);
-                            lastTime[0] = t;
-                        }
-                    }
-                    return current[fi];
-                }
-            };
-        }
-        return result;
+        // Close the loop: resultRef[i] points to p1OutSig[i] so that p2InSig can recurse.
+        System.arraycopy(p1OutSig, 0, resultRef, 0, q);
+
+        return p1OutSig;
     }
 }
