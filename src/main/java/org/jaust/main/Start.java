@@ -1,13 +1,9 @@
 package org.jaust.main;
 
 import org.jaust.Context;
-import org.jaust.Signal;
 import org.jaust.context.DefaultContext;
 import org.jaust.Signal.Type;
-import java.util.Arrays;
-import java.util.function.BiFunction;
-import java.util.function.DoubleBinaryOperator;
-import static java.lang.Math.*;
+import org.jaust.processor.array.DefaultProcessorArray;
 
 public class Start {
     public static void main(String[] args) {
@@ -22,10 +18,10 @@ public class Start {
         
         var p =
             t1.
-            par(t2).
-            seq(add);
+            par(DefaultProcessorArray.of(t2)).
+            seq(DefaultProcessorArray.of(add));
         
-        var s = p.apply()[0];
+        var s = p.apply().at(0);
         
         double sum = 0.0;
         
@@ -42,8 +38,8 @@ public class Start {
         var p1 = c.addD();
         var p2 = c.cache(c.wire(Type.DOUBLE));
         var rec = c.rec(p1, p2);
-        var combined = c.seq(c.valD(1.0), rec);
-        var s = combined.apply()[0];
+        var combined = c.seq(DefaultProcessorArray.of(c.valD(1.0), rec));
+        var s = combined.apply().at(0);
         double sum = 0.0;
         
         for (long i = 0; i < 1_000_000_000; i++) {

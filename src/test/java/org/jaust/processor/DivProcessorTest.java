@@ -4,6 +4,8 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.context.DefaultContext;
+import org.jaust.processor.array.DefaultProcessorArray;
+import org.jaust.signal.SignalArray;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,9 +38,9 @@ class DivProcessorTest {
         assertArrayEquals(p1.inType(), div.inType());
         assertArrayEquals(p2.outType(), div.outType());
 
-        Signal[] out = div.apply();
-        assertEquals(6.0, out[0].doubleAt(0), 1e-9);
-        assertEquals(6.0, out[0].doubleAt(1), 1e-9);
+        SignalArray out = div.apply();
+        assertEquals(6.0, out.at(0).doubleAt(0), 1e-9);
+        assertEquals(6.0, out.at(0).doubleAt(1), 1e-9);
     }
 
     /**
@@ -50,17 +52,17 @@ class DivProcessorTest {
     void splitTwo_toFour_roundRobinDistribution() {
         Processor c1 = ctx.valD(1.0);
         Processor c2 = ctx.valD(2.0);
-        Processor p1 = ctx.par(c1, c2);                  // 2 outputs: [1.0, 2.0]
+        Processor p1 = ctx.par(DefaultProcessorArray.of(c1, c2));                  // 2 outputs: [1.0, 2.0]
 
         Processor adder = ctx.binD(Double::sum);
-        Processor p2 = ctx.par(adder, adder);             // 4 inputs, 2 outputs
+        Processor p2 = ctx.par(DefaultProcessorArray.of(adder, adder));             // 4 inputs, 2 outputs
 
         Processor div = ctx.div(p1, p2);
 
-        Signal[] out = div.apply();
-        assertEquals(2, out.length);
-        assertEquals(3.0, out[0].doubleAt(0), 1e-9);     // 1.0 + 2.0
-        assertEquals(3.0, out[1].doubleAt(0), 1e-9);     // 1.0 + 2.0
+        SignalArray out = div.apply();
+        assertEquals(2, out.length());
+        assertEquals(3.0, out.at(0).doubleAt(0), 1e-9);     // 1.0 + 2.0
+        assertEquals(3.0, out.at(1).doubleAt(0), 1e-9);     // 1.0 + 2.0
     }
 
     /**
@@ -72,8 +74,8 @@ class DivProcessorTest {
         Processor p2 = ctx.binD(Double::sum);
         Processor div = p1.div(p2);
 
-        Signal[] out = div.apply();
-        assertEquals(10.0, out[0].doubleAt(0), 1e-9);
+        SignalArray out = div.apply();
+        assertEquals(10.0, out.at(0).doubleAt(0), 1e-9);
     }
 
     /**

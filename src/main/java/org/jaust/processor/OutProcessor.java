@@ -2,6 +2,8 @@ package org.jaust.processor;
 
 import org.jaust.Context;
 import org.jaust.Signal;
+import org.jaust.signal.SignalArray;
+import org.jaust.signal.array.DefaultArray;
 
 public record OutProcessor(Signal output) implements DefaultProcessor {
     
@@ -14,7 +16,7 @@ public record OutProcessor(Signal output) implements DefaultProcessor {
     public Signal.Type[] outType() {
         return new Signal.Type[]{output.type()};
     }
-    public Signal[] apply(Signal... signal) {
-        return new Signal[] { output };
+    public SignalArray apply(SignalArray signal) {
+        return DefaultArray.a(output);
     }
 }

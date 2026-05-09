@@ -1,5 +1,6 @@
 package org.jaust;
 
+import org.jaust.processor.ProcessorArray;
 import java.util.function.*;
 
 public interface Context {
@@ -22,8 +23,8 @@ public interface Context {
     Processor wire(Signal.Type type);
     Processor cache(Processor p);
     
-    Processor par(Processor... processor);
-    Processor seq(Processor... processors);
+    Processor par(ProcessorArray processors);
+    Processor seq(ProcessorArray processors);
     Processor div(Processor p1, Processor p2);
     Processor rec(Processor p1, Processor p2);
     

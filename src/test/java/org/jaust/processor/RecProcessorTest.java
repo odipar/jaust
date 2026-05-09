@@ -4,6 +4,9 @@ import org.jaust.Context;
 import org.jaust.Processor;
 import org.jaust.Signal;
 import org.jaust.context.DefaultContext;
+import org.jaust.processor.array.DefaultProcessorArray;
+import org.jaust.signal.SignalArray;
+import org.jaust.signal.array.DefaultArray;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +33,7 @@ class RecProcessorTest {
             public Context context() { return ctx; }
             public Signal.Type[] inType()  { return new Signal.Type[]{Signal.Type.DOUBLE}; }
             public Signal.Type[] outType() { return new Signal.Type[]{Signal.Type.DOUBLE}; }
-            public Signal[] apply(Signal... signal) { return new Signal[]{signal[0]}; }
+            public SignalArray apply(SignalArray signal) { return DefaultArray.a(signal.at(0)); }
         };
     }
 
@@ -51,13 +54,13 @@ class RecProcessorTest {
         Processor rec = ctx.rec(p1, p2);
 
         // Provide external input = constant 1.0 via seq
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
-        Signal[] out = combined.apply();
-        assertEquals(1.0,  out[0].doubleAt(0), 1e-9);
-        assertEquals(2.0,  out[0].doubleAt(1), 1e-9);
-        assertEquals(3.0,  out[0].doubleAt(2), 1e-9);
-        assertEquals(10.0, out[0].doubleAt(9), 1e-9);
+        SignalArray out = combined.apply();
+        assertEquals(1.0,  out.at(0).doubleAt(0), 1e-9);
+        assertEquals(2.0,  out.at(0).doubleAt(1), 1e-9);
+        assertEquals(3.0,  out.at(0).doubleAt(2), 1e-9);
+        assertEquals(10.0, out.at(0).doubleAt(9), 1e-9);
     }
 
     /**
@@ -66,10 +69,10 @@ class RecProcessorTest {
     @Test
     void feedbackInitialisedToZero() {
         Processor rec      = ctx.rec(ctx.binD(Double::sum), wire());
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
         // At t=0 the feedback is 0 (initial state), so result = 0 + 1 = 1
-        assertEquals(1.0, combined.apply()[0].doubleAt(0), 1e-9);
+        assertEquals(1.0, combined.apply().at(0).doubleAt(0), 1e-9);
     }
 
     /**
@@ -88,22 +91,22 @@ class RecProcessorTest {
             public Context context() { return ctx; }
             public Signal.Type[] inType()  { return new Signal.Type[]{Signal.Type.DOUBLE}; }
             public Signal.Type[] outType() { return new Signal.Type[]{Signal.Type.DOUBLE}; }
-            public Signal[] apply(Signal... signal) {
-                Signal in = signal[0];
-                return new Signal[]{new org.jaust.signal.DoubleSignal() {
+            public SignalArray apply(SignalArray signal) {
+                Signal in = signal.at(0);
+                return DefaultArray.a(new org.jaust.signal.DoubleSignal() {
                     public Context context() { return ctx; }
                     public double doubleAt(long time) { return in.doubleAt(time) * 0.5; }
-                }};
+                });
             }
         };
 
         Processor rec      = ctx.rec(ctx.binD(Double::sum), scaleHalf);
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
-        Signal[] out = combined.apply();
-        assertEquals(1.0,  out[0].doubleAt(0), 1e-9);
-        assertEquals(1.5,  out[0].doubleAt(1), 1e-9);
-        assertEquals(1.75, out[0].doubleAt(2), 1e-9);
+        SignalArray out = combined.apply();
+        assertEquals(1.0,  out.at(0).doubleAt(0), 1e-9);
+        assertEquals(1.5,  out.at(0).doubleAt(1), 1e-9);
+        assertEquals(1.75, out.at(0).doubleAt(2), 1e-9);
     }
 
     /**
@@ -142,11 +145,11 @@ class RecProcessorTest {
     @Test
     void outOfOrderQuery_earlierTimeAfterLaterTime() {
         Processor rec      = ctx.rec(ctx.binD(Double::sum), wire());
-        Processor combined = ctx.seq(ctx.valD(1.0), rec);
+        Processor combined = ctx.seq(DefaultProcessorArray.of(ctx.valD(1.0), rec));
 
-        Signal[] out = combined.apply();
-        assertEquals(10.0, out[0].doubleAt(9), 1e-9);  // query t=9 first
-        assertEquals(1.0,  out[0].doubleAt(0), 1e-9);  // then query t=0 (must not use cached t=9)
-        assertEquals(5.0,  out[0].doubleAt(4), 1e-9);  // then an intermediate time
+        SignalArray out = combined.apply();
+        assertEquals(10.0, out.at(0).doubleAt(9), 1e-9);  // query t=9 first
+        assertEquals(1.0,  out.at(0).doubleAt(0), 1e-9);  // then query t=0 (must not use cached t=9)
+        assertEquals(5.0,  out.at(0).doubleAt(4), 1e-9);  // then an intermediate time
     }
 }

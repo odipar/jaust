@@ -4,6 +4,7 @@ import org.jaust.Signal;
 import org.jaust.signal.SignalArray;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 public class DefaultArray implements SignalArray {
     private final Signal[] array;
@@ -16,6 +17,16 @@ public class DefaultArray implements SignalArray {
         return new DefaultArray(signals);
     }
 
+    public static SignalArray generate(int length, IntFunction<Signal> f) {
+        if (length < 0) throw new IllegalArgumentException("length cannot be negative");
+        Objects.requireNonNull(f, "generator function cannot be null");
+        Signal[] out = new Signal[length];
+        for (int i = 0; i < length; i++) {
+            out[i] = f.apply(i);
+        }
+        return new DefaultArray(out);
+    }
+
     public int length() {
         return array.length;
     }
@@ -26,6 +37,14 @@ public class DefaultArray implements SignalArray {
 
     public Signal[] toArray() {
         return array.clone();
+    }
+
+    public SignalArray slice(int from, int to) {
+        if (from < 0 || to > array.length || from > to)
+            throw new IllegalArgumentException("invalid slice range [" + from + ", " + to + ")");
+        Signal[] out = new Signal[to - from];
+        System.arraycopy(array, from, out, 0, to - from);
+        return new DefaultArray(out);
     }
 
     public SignalArray prepend(Signal signal) {
