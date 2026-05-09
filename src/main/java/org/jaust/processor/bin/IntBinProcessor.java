@@ -8,6 +8,7 @@ import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 import java.util.function.IntBinaryOperator;
 
+// Two-input, one-output processor applying an int binary operator to two int signals.
 public record IntBinProcessor(Context context, IntBinaryOperator o) implements DefaultProcessor {
     public Signal.Type[] inType() {
         return new Signal.Type[] {Signal.Type.INT, Signal.Type.INT};

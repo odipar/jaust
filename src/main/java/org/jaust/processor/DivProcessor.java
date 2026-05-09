@@ -6,13 +6,7 @@ import org.jaust.Signal;
 import org.jaust.signal.SignalArray;
 import org.jaust.signal.array.DefaultArray;
 
-/**
- * Implements the Faust split composition operator ({@code <:}).
- * <p>
- * {@code p1 <: p2} distributes p1's outputs to p2's inputs. If p1 has {@code n} outputs and
- * p2 has {@code m} inputs, {@code m} must be a multiple of {@code n}. Input {@code i} of p2
- * receives output {@code i % n} of p1.
- */
+// Faust split composition (<:): distributes p1's outputs across p2's inputs by cycling (input i gets output i % n).
 public record DivProcessor(Processor p1, Processor p2) implements DefaultProcessor {
 
     public Context context() { return p1.context(); }

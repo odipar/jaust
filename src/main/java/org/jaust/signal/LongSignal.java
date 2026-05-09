@@ -2,6 +2,7 @@ package org.jaust.signal;
 
 import org.jaust.Signal;
 
+// A Signal producing long values; other types are scaled proportionally to their full range.
 public interface LongSignal extends Signal {
     default Signal.Type type() { return  Signal.Type.LONG; }
     

@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.signal.DoubleSignal;
 import java.util.function.LongToDoubleFunction;
 
+// Generates a double signal by applying a time-to-double function; returns 0 for negative time.
 public record DoubleGen(Context context, LongToDoubleFunction f) implements DoubleSignal {
     public double doubleAt(long time) {
         if (time < 0) return 0;

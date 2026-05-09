@@ -3,6 +3,7 @@ package org.jaust.processor;
 import org.jaust.Processor;
 import org.jaust.signal.SignalArray;
 
+// Faust sequential composition (:): pipes p1's outputs into p2's inputs.
 public record SeqProcessor(Processor p1, Processor p2) implements DefaultProcessor {
     public org.jaust.Context context() { return p1.context(); }
 

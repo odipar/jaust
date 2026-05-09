@@ -5,6 +5,7 @@ import org.jaust.context.DefaultContext;
 import org.jaust.Signal.Type;
 import org.jaust.processor.array.DefaultProcessorArray;
 
+// Entry point with example programs demonstrating Faust-style signal composition.
 public class Start {
     public static void main(String[] args) {
         //example1(new DefaultContext(44100));

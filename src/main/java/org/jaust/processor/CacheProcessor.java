@@ -11,6 +11,7 @@ import org.jaust.signal.cache.DoubleCache;
 import org.jaust.signal.cache.IntCache;
 import org.jaust.signal.cache.LongCache;
 
+// Wraps a processor to memoize each signal value per sample time, avoiding redundant recomputation.
 public record CacheProcessor(Processor processor) implements DefaultProcessor {
     
     public org.jaust.Context context() {

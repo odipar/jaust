@@ -3,6 +3,7 @@ package org.jaust.processor;
 import org.jaust.Processor;
 import java.util.function.BinaryOperator;
 
+// An ordered collection of Processors with prepend, append, and reduce operations.
 public interface ProcessorArray {
     int length();
     Processor at(int index);

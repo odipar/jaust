@@ -12,16 +12,7 @@ import org.jaust.signal.array.DefaultArray;
 
 import java.util.Arrays;
 
-/**
- * Implements the Faust recursive composition operator ({@code ~}).
- * <p>
- * {@code p1 ~ p2}: p1 has {@code p} inputs and {@code q} outputs; p2 has {@code q} inputs and
- * {@code r} outputs ({@code r <= p}). The combined block has {@code p - r} inputs and {@code q}
- * outputs. p2's outputs are fed back to p1's first {@code r} inputs with a one-sample delay.
- * <p>
- * Implemented using actual recursion with no hidden state. Signals may be queried at any time
- * in any order; each query is computed purely from the input signals and prior recursive values.
- */
+// Faust recursive composition (~): feeds p1's outputs back to its first inputs via p2 with a one-sample delay.
 public record RecProcessor(Processor p1, Processor p2) implements DefaultProcessor {
 
     public Context context() { return p1.context(); }

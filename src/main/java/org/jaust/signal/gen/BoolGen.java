@@ -4,6 +4,7 @@ import org.jaust.Context;
 import org.jaust.signal.BooleanSignal;
 import java.util.function.LongPredicate;
 
+// Generates a boolean signal by applying a time-to-bool function; returns false for negative time.
 public record BoolGen(Context context, LongPredicate f) implements BooleanSignal {
     public boolean boolAt(long time) {
         if (time < 0) return false;

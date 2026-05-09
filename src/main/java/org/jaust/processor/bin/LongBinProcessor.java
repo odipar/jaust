@@ -9,6 +9,7 @@ import org.jaust.signal.array.DefaultArray;
 
 import java.util.function.LongBinaryOperator;
 
+// Two-input, one-output processor applying a long binary operator to two long signals.
 public record LongBinProcessor(Context context,LongBinaryOperator o) implements DefaultProcessor {
     public Signal.Type[] inType() {
         return new Signal.Type[] {Signal.Type.LONG, Signal.Type.LONG};
