@@ -80,7 +80,7 @@ public record DefaultContext(long frequency) implements Context {
         return new AvgProcessor(p1, p2);
     }
     public Processor rec(Processor p1, Processor p2) {
-        return new RecProcessor(p1, p2);
+        return new MutableRecProcessor(p1, p2);
     }
     public Processor resample(Processor source) {
         long srcFreq = source.context().frequency();
