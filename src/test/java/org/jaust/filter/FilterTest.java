@@ -228,6 +228,105 @@ class FilterTest {
                 "4th-order Butterworth high-pass should pass frequencies above cutoff");
     }
 
+    // --- Butterworth amplitude range tests ---
+
+    @Test
+    void butterworthLowPass_outputDoesNotExceedInputRange() {
+        ButterworthLowPass f = new ButterworthLowPass(ctx);
+        // Input signal in range [0.0, 1.0]
+        DoubleSignal input = new DoubleSignal() {
+            public Context context() { return ctx; }
+            public double doubleAt(long time) {
+                // A signal that stays within [0.0, 1.0]: offset sine
+                return 0.5 + 0.5 * Math.sin(2.0 * Math.PI * 1000.0 * time / SAMPLE_RATE);
+            }
+        };
+        DoubleSignal cutoff = constantSignal(5000.0);
+        SignalArray out = f.apply(DefaultArray.a(input, cutoff));
+        DoubleSignal result = (DoubleSignal) out.at(0);
+
+        double maxOutput = Double.NEGATIVE_INFINITY;
+        double minOutput = Double.POSITIVE_INFINITY;
+        for (long t = 0; t < 4000; t++) {
+            double v = result.doubleAt(t);
+            if (v > maxOutput) maxOutput = v;
+            if (v < minOutput) minOutput = v;
+        }
+        assertTrue(maxOutput <= 1.0,
+                "Butterworth low-pass output should not exceed input max (1.0), got: " + maxOutput);
+        assertTrue(minOutput >= 0.0,
+                "Butterworth low-pass output should not go below input min (0.0), got: " + minOutput);
+    }
+
+    @Test
+    void butterworthHighPass_outputDoesNotExceedInputRange() {
+        ButterworthHighPass f = new ButterworthHighPass(ctx);
+        // Input signal in range [-1.0, 1.0]: a sine wave
+        DoubleSignal input = sineSignal(5000.0);
+        DoubleSignal cutoff = constantSignal(1000.0);
+        SignalArray out = f.apply(DefaultArray.a(input, cutoff));
+        DoubleSignal result = (DoubleSignal) out.at(0);
+
+        // Skip initial transient (first 500 samples) and check steady-state amplitude
+        double maxOutput = Double.NEGATIVE_INFINITY;
+        double minOutput = Double.POSITIVE_INFINITY;
+        for (long t = 500; t < 4000; t++) {
+            double v = result.doubleAt(t);
+            if (v > maxOutput) maxOutput = v;
+            if (v < minOutput) minOutput = v;
+        }
+        assertTrue(maxOutput <= 1.0,
+                "Butterworth high-pass output should not exceed input max (1.0), got: " + maxOutput);
+        assertTrue(minOutput >= -1.0,
+                "Butterworth high-pass output should not go below input min (-1.0), got: " + minOutput);
+    }
+
+    @Test
+    void butterworthLowPass_stepResponseDoesNotOvershoot() {
+        ButterworthLowPass f = new ButterworthLowPass(ctx);
+        // Step signal: 0 for t<0, 1.0 for t>=0 (input range [0.0, 1.0])
+        DoubleSignal input = new DoubleSignal() {
+            public Context context() { return ctx; }
+            public double doubleAt(long time) {
+                return time >= 0 ? 1.0 : 0.0;
+            }
+        };
+        DoubleSignal cutoff = constantSignal(5000.0);
+        SignalArray out = f.apply(DefaultArray.a(input, cutoff));
+        DoubleSignal result = (DoubleSignal) out.at(0);
+
+        double maxOutput = Double.NEGATIVE_INFINITY;
+        double minOutput = Double.POSITIVE_INFINITY;
+        for (long t = 0; t < 4000; t++) {
+            double v = result.doubleAt(t);
+            if (v > maxOutput) maxOutput = v;
+            if (v < minOutput) minOutput = v;
+        }
+        assertTrue(maxOutput <= 1.0,
+                "Butterworth low-pass step response should not overshoot above 1.0, got: " + maxOutput);
+        assertTrue(minOutput >= 0.0,
+                "Butterworth low-pass step response should not undershoot below 0.0, got: " + minOutput);
+    }
+
+    @Test
+    void butterworthHighPass_steadyStateSineDoesNotAmplify() {
+        ButterworthHighPass f = new ButterworthHighPass(ctx);
+        // Input signal well above cutoff frequency: amplitude should pass unchanged
+        DoubleSignal input = sineSignal(10000.0); // 10kHz, well above 2kHz cutoff
+        DoubleSignal cutoff = constantSignal(2000.0);
+        SignalArray out = f.apply(DefaultArray.a(input, cutoff));
+        DoubleSignal result = (DoubleSignal) out.at(0);
+
+        // After transient settles, measure peak amplitude
+        double maxAbsOutput = 0;
+        for (long t = 1000; t < 4000; t++) {
+            double v = Math.abs(result.doubleAt(t));
+            if (v > maxAbsOutput) maxAbsOutput = v;
+        }
+        assertTrue(maxAbsOutput <= 1.0,
+                "Butterworth high-pass should not amplify signals in passband, got peak: " + maxAbsOutput);
+    }
+
     // --- Variable cutoff frequency test ---
 
     @Test

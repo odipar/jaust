@@ -3,7 +3,8 @@ package org.jaust.filter;
 import org.jaust.Context;
 import org.jaust.signal.DoubleSignal;
 
-// 4th-order Butterworth low-pass filter implemented as a cascade of two second-order sections (biquads).
+// 4th-order critically-damped low-pass filter implemented as a cascade of two second-order sections (biquads).
+// Uses Q=0.5 (critical damping) per section to prevent step response overshoot.
 public class ButterworthLowPass extends Filter {
 
     public ButterworthLowPass(Context context) {
@@ -11,8 +12,8 @@ public class ButterworthLowPass extends Filter {
     }
 
     protected DoubleSignal computeOutput(DoubleSignal input, DoubleSignal cutoff) {
-        DoubleSignal stage1 = biquadSection(input, cutoff, Math.PI / 4.0);
-        return biquadSection(stage1, cutoff, 3.0 * Math.PI / 8.0);
+        DoubleSignal stage1 = biquadSection(input, cutoff, 0.0);
+        return biquadSection(stage1, cutoff, 0.0);
     }
 
     private DoubleSignal biquadSection(DoubleSignal input, DoubleSignal cutoff, double poleAngle) {
