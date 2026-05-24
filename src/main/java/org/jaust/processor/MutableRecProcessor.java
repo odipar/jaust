@@ -13,19 +13,19 @@ import org.jaust.signal.array.DefaultArray;
 import java.util.Arrays;
 
 /**
- * Alternative RecProcessor using mutable arrays for iterative computation.
+ * Alternative RecProcessor using single-value mutable state for feedback.
  * <p>
- * Instead of lazy recursive signal delegation (which leads to O(t) stack depth
- * for each sample query), this implementation eagerly computes and caches all
- * feedback values in growable arrays. Queries are O(1) amortized after the
- * initial forward pass.
+ * Each feedback channel holds only one value: the most recently computed output (t-1).
+ * Computation is iterative – stepping forward from t=0 to the requested time,
+ * updating the single stored value at each step. This avoids O(t) stack depth
+ * and uses minimal memory (one value per channel regardless of time).
  * <p>
- * Key efficiency improvements over {@link RecProcessor}:
+ * Key properties:
  * <ul>
- *   <li>No deep recursion – iterative forward computation avoids stack overflow</li>
- *   <li>O(1) amortized per sample via cached mutable arrays</li>
- *   <li>Better cache locality – sequential array access vs pointer chasing</li>
- *   <li>Inline mutation – arrays are mutated in place as new samples are computed</li>
+ *   <li>No recursion – iterative forward computation avoids stack overflow</li>
+ *   <li>Minimal memory – only 1 value per feedback channel (the t-1 state)</li>
+ *   <li>Inline mutation – the stored value is updated in place at each step</li>
+ *   <li>Sequential access is O(1) per step; random access recomputes from 0</li>
  * </ul>
  */
 public record MutableRecProcessor(Processor p1, Processor p2) implements DefaultProcessor {
@@ -45,54 +45,42 @@ public record MutableRecProcessor(Processor p1, Processor p2) implements Default
 
         Signal.Type[] outTypes = p1.outType();
 
-        // Create mutable cached signals for p1 outputs (the feedback path)
-        MutableSignal[] mutables = new MutableSignal[q];
-        Signal[] mutSignals = new Signal[q];
+        // Each feedback channel holds only the single previous value (t-1)
+        FeedbackCell[] cells = new FeedbackCell[q];
+        Signal[] feedbackSignals = new Signal[q];
         for (int i = 0; i < q; i++) {
-            mutables[i] = new MutableSignal(outTypes[i]);
-            mutSignals[i] = mutables[i].asSignal(p1.context());
+            cells[i] = new FeedbackCell(outTypes[i]);
+            feedbackSignals[i] = cells[i].asSignal(p1.context());
         }
 
         // Wire p2: takes all q p1-outputs as input, produces r feedback signals
-        SignalArray p2OutSig = p2.apply(DefaultArray.a(mutSignals));
+        SignalArray p2OutSig = p2.apply(DefaultArray.a(feedbackSignals));
         // Wire p1: takes r feedback signals + external signals as input
         SignalArray p1OutSig = p1.apply(p2OutSig.slice(0, r).append(externalSignals));
 
-        // Create output signals that iteratively compute and cache values
-        Signal[] outputSignals = new Signal[q];
-        // Shared computation state across all output channels
-        IterativeState state = new IterativeState(q, mutables, p1OutSig);
+        // Shared state for iterative stepping
+        IterativeState state = new IterativeState(q, cells, p1OutSig);
 
+        // Create output signals that step forward to the requested time
+        Signal[] outputSignals = new Signal[q];
         for (int i = 0; i < q; i++) {
             final int idx = i;
             outputSignals[i] = switch (outTypes[i]) {
                 case BOOL -> new BooleanSignal() {
                     public Context context() { return p1.context(); }
-                    public boolean boolAt(long time) {
-                        state.computeUpTo(time);
-                        return mutables[idx].directBoolAt(time);
-                    }
+                    public boolean boolAt(long time) { return state.boolAt(idx, time); }
                 };
                 case INT -> new IntSignal() {
                     public Context context() { return p1.context(); }
-                    public int intAt(long time) {
-                        state.computeUpTo(time);
-                        return mutables[idx].directIntAt(time);
-                    }
+                    public int intAt(long time) { return state.intAt(idx, time); }
                 };
                 case LONG -> new LongSignal() {
                     public Context context() { return p1.context(); }
-                    public long longAt(long time) {
-                        state.computeUpTo(time);
-                        return mutables[idx].directLongAt(time);
-                    }
+                    public long longAt(long time) { return state.longAt(idx, time); }
                 };
                 case DOUBLE -> new DoubleSignal() {
                     public Context context() { return p1.context(); }
-                    public double doubleAt(long time) {
-                        state.computeUpTo(time);
-                        return mutables[idx].directDoubleAt(time);
-                    }
+                    public double doubleAt(long time) { return state.doubleAt(idx, time); }
                 };
             };
         }
@@ -101,154 +89,147 @@ public record MutableRecProcessor(Processor p1, Processor p2) implements Default
     }
 
     /**
-     * Shared iterative computation state. Coordinates forward computation
-     * across all output channels so that each time step is computed exactly once.
+     * Shared iterative computation state. Steps forward one sample at a time,
+     * updating each cell's single stored value. Tracks the last computed time
+     * so sequential forward access is O(1) per step.
      */
     private static class IterativeState {
         private long computedUpTo = -1;
         private final int q;
-        private final MutableSignal[] mutables;
+        private final FeedbackCell[] cells;
         private final SignalArray p1OutSig;
+        // Snapshot of output values at computedUpTo (for output reads)
+        private double[] lastDouble;
+        private int[] lastInt;
+        private long[] lastLong;
+        private boolean[] lastBool;
 
-        IterativeState(int q, MutableSignal[] mutables, SignalArray p1OutSig) {
+        IterativeState(int q, FeedbackCell[] cells, SignalArray p1OutSig) {
             this.q = q;
-            this.mutables = mutables;
+            this.cells = cells;
             this.p1OutSig = p1OutSig;
+            this.lastDouble = new double[q];
+            this.lastInt = new int[q];
+            this.lastLong = new long[q];
+            this.lastBool = new boolean[q];
         }
 
-        void computeUpTo(long time) {
+        private void stepTo(long time) {
+            if (time < 0) return;
+            // If requested time is behind current position, reset and recompute
+            if (time < computedUpTo) {
+                computedUpTo = -1;
+                for (int i = 0; i < q; i++) {
+                    cells[i].reset();
+                }
+            }
             if (time <= computedUpTo) return;
-            // Iteratively compute from computedUpTo+1 to time
             long start = computedUpTo + 1;
             for (long t = start; t <= time; t++) {
                 for (int i = 0; i < q; i++) {
-                    mutables[i].store(t, p1OutSig.at(i));
+                    cells[i].advance(t, p1OutSig.at(i));
+                    // Capture the current output value
+                    switch (cells[i].type) {
+                        case DOUBLE -> lastDouble[i] = cells[i].doubleVal;
+                        case INT    -> lastInt[i] = cells[i].intVal;
+                        case LONG   -> lastLong[i] = cells[i].longVal;
+                        case BOOL   -> lastBool[i] = cells[i].boolVal;
+                    }
                 }
             }
             computedUpTo = time;
         }
+
+        boolean boolAt(int idx, long time) {
+            if (time < 0) return false;
+            stepTo(time);
+            return lastBool[idx];
+        }
+
+        int intAt(int idx, long time) {
+            if (time < 0) return 0;
+            stepTo(time);
+            return lastInt[idx];
+        }
+
+        long longAt(int idx, long time) {
+            if (time < 0) return 0L;
+            stepTo(time);
+            return lastLong[idx];
+        }
+
+        double doubleAt(int idx, long time) {
+            if (time < 0) return 0.0;
+            stepTo(time);
+            return lastDouble[idx];
+        }
     }
 
     /**
-     * Mutable signal backed by a growable array. Stores computed sample values
-     * inline and provides O(1) access to previously computed samples.
-     * For the feedback path, values at time <= 0 return the type's zero value,
-     * and the signal delegates to the stored value shifted by one sample (time - 1).
+     * Holds a single feedback value (the t-1 state) for one channel.
+     * The feedback signal reads this value, providing the one-sample delay.
+     * After each step, the value is updated to the latest p1 output.
      */
-    private static class MutableSignal {
-        private final Signal.Type type;
-        private double[] doubleData;
-        private int[] intData;
-        private long[] longData;
-        private boolean[] boolData;
-        private int capacity;
-        private long stored = -1; // highest time index stored
+    private static class FeedbackCell {
+        final Signal.Type type;
+        double doubleVal;
+        int intVal;
+        long longVal;
+        boolean boolVal;
 
-        private static final int INITIAL_CAPACITY = 64;
-
-        MutableSignal(Signal.Type type) {
+        FeedbackCell(Signal.Type type) {
             this.type = type;
-            this.capacity = INITIAL_CAPACITY;
+        }
+
+        void reset() {
+            doubleVal = 0.0;
+            intVal = 0;
+            longVal = 0L;
+            boolVal = false;
+        }
+
+        /** Advance: read the current p1 output at time t, store it as the new feedback value. */
+        void advance(long time, Signal source) {
             switch (type) {
-                case DOUBLE -> doubleData = new double[capacity];
-                case INT    -> intData = new int[capacity];
-                case LONG   -> longData = new long[capacity];
-                case BOOL   -> boolData = new boolean[capacity];
+                case DOUBLE -> doubleVal = source.doubleAt(time);
+                case INT    -> intVal = source.intAt(time);
+                case LONG   -> longVal = source.longAt(time);
+                case BOOL   -> boolVal = source.boolAt(time);
             }
         }
 
-        /** Store the value at the given time from the source signal. */
-        void store(long time, Signal source) {
-            int idx = (int) time;
-            ensureCapacity(idx + 1);
-            switch (type) {
-                case DOUBLE -> doubleData[idx] = source.doubleAt(time);
-                case INT    -> intData[idx] = source.intAt(time);
-                case LONG   -> longData[idx] = source.longAt(time);
-                case BOOL   -> boolData[idx] = source.boolAt(time);
-            }
-            if (time > stored) stored = time;
-        }
-
-        /** Read cached double at time (for feedback: shifted by -1, zero at t<=0). */
-        boolean boolAt(long time) {
-            // Feedback semantics: one-sample delay
-            long feedbackTime = time - 1;
-            if (feedbackTime < 0) return false;
-            return boolData[(int) feedbackTime];
-        }
-
-        int intAt(long time) {
-            long feedbackTime = time - 1;
-            if (feedbackTime < 0) return 0;
-            return intData[(int) feedbackTime];
-        }
-
-        long longAt(long time) {
-            long feedbackTime = time - 1;
-            if (feedbackTime < 0) return 0L;
-            return longData[(int) feedbackTime];
-        }
-
-        double doubleAt(long time) {
-            long feedbackTime = time - 1;
-            if (feedbackTime < 0) return 0.0;
-            return doubleData[(int) feedbackTime];
-        }
-
-        /** Direct access (no time shift) for output signals. */
-        boolean directBoolAt(long time) {
-            if (time < 0) return false;
-            return boolData[(int) time];
-        }
-
-        int directIntAt(long time) {
-            if (time < 0) return 0;
-            return intData[(int) time];
-        }
-
-        long directLongAt(long time) {
-            if (time < 0) return 0L;
-            return longData[(int) time];
-        }
-
-        double directDoubleAt(long time) {
-            if (time < 0) return 0.0;
-            return doubleData[(int) time];
-        }
-
-        /** Create a Signal view for use in the signal graph (feedback path). */
+        /** Create a feedback Signal that reads the single stored value (one-sample delay). */
         Signal asSignal(Context ctx) {
             return switch (type) {
                 case BOOL -> new BooleanSignal() {
                     public Context context() { return ctx; }
-                    public boolean boolAt(long time) { return MutableSignal.this.boolAt(time); }
+                    public boolean boolAt(long time) {
+                        if (time <= 0) return false;
+                        return boolVal;
+                    }
                 };
                 case INT -> new IntSignal() {
                     public Context context() { return ctx; }
-                    public int intAt(long time) { return MutableSignal.this.intAt(time); }
+                    public int intAt(long time) {
+                        if (time <= 0) return 0;
+                        return intVal;
+                    }
                 };
                 case LONG -> new LongSignal() {
                     public Context context() { return ctx; }
-                    public long longAt(long time) { return MutableSignal.this.longAt(time); }
+                    public long longAt(long time) {
+                        if (time <= 0) return 0L;
+                        return longVal;
+                    }
                 };
                 case DOUBLE -> new DoubleSignal() {
                     public Context context() { return ctx; }
-                    public double doubleAt(long time) { return MutableSignal.this.doubleAt(time); }
+                    public double doubleAt(long time) {
+                        if (time <= 0) return 0.0;
+                        return doubleVal;
+                    }
                 };
             };
-        }
-
-        private void ensureCapacity(int minCapacity) {
-            if (minCapacity <= capacity) return;
-            int newCapacity = Math.max(capacity * 2, minCapacity);
-            switch (type) {
-                case DOUBLE -> doubleData = Arrays.copyOf(doubleData, newCapacity);
-                case INT    -> intData = Arrays.copyOf(intData, newCapacity);
-                case LONG   -> longData = Arrays.copyOf(longData, newCapacity);
-                case BOOL   -> boolData = Arrays.copyOf(boolData, newCapacity);
-            }
-            capacity = newCapacity;
         }
     }
 }
