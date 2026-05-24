@@ -24,13 +24,29 @@ public class FirHighPass extends Filter {
             public double doubleAt(long time) {
                 if (time < 0) return 0.0;
                 double fc = cutoff.doubleAt(time);
-                int n = Math.max(1, Math.min(order, (int) (fs / (2.0 * fc))));
+                double normalized = fc / fs; // normalized cutoff (0..0.5)
+                int m = order / 2; // center of the filter
                 double sum = 0.0;
-                for (int i = 0; i < n; i++) {
+                double coeffSum = 0.0;
+                for (int i = 0; i < order; i++) {
                     long t = time - i;
-                    sum += (t >= 0) ? input.doubleAt(t) : 0.0;
+                    double x = (t >= 0) ? input.doubleAt(t) : 0.0;
+                    // windowed-sinc low-pass coefficient
+                    int k = i - m;
+                    double h;
+                    if (k == 0) {
+                        h = 2.0 * normalized;
+                    } else {
+                        h = Math.sin(2.0 * Math.PI * normalized * k) / (Math.PI * k);
+                    }
+                    // Hamming window
+                    h *= 0.54 - 0.46 * Math.cos(2.0 * Math.PI * i / (order - 1));
+                    sum += h * x;
+                    coeffSum += h;
                 }
-                return input.doubleAt(time) - sum / n;
+                // Spectral inversion: high-pass = delta - low-pass
+                double lpSample = (coeffSum != 0.0) ? sum / coeffSum : 0.0;
+                return input.doubleAt(Math.max(0, time - m)) - lpSample;
             }
         };
     }
