@@ -3,15 +3,15 @@ package org.jaust.filter;
 import org.jaust.Context;
 import org.jaust.signal.DoubleSignal;
 
-// A cache for DoubleSignal that computes values sequentially from time 0, avoiding deep recursion.
+// Ring-buffer cache of 256 values for DoubleSignal, anticipating sequential (back in time t-n) reads.
 class SequentialDoubleCache implements DoubleSignal {
+    private static final int SIZE = 256;
     private final DoubleSignal source;
-    private double[] cache;
-    private int computed; // number of values computed (indices 0..computed-1 are valid)
+    private final double[] ring = new double[SIZE];
+    private long computed; // values at indices 0..computed-1 have been computed sequentially
 
     SequentialDoubleCache(DoubleSignal source) {
         this.source = source;
-        this.cache = new double[256];
         this.computed = 0;
     }
 
@@ -19,22 +19,18 @@ class SequentialDoubleCache implements DoubleSignal {
 
     public double doubleAt(long time) {
         if (time < 0) return source.doubleAt(time);
-        int t = (int) time;
-        ensureComputed(t);
-        return cache[t];
-    }
-
-    private void ensureComputed(int t) {
-        if (t < computed) return;
-        if (t >= cache.length) {
-            int newLen = Math.max(cache.length * 2, t + 1);
-            double[] newCache = new double[newLen];
-            System.arraycopy(cache, 0, newCache, 0, computed);
-            cache = newCache;
+        // Ensure all values up to 'time' are computed sequentially
+        if (time >= computed) {
+            for (long i = computed; i <= time; i++) {
+                ring[(int) (i & (SIZE - 1))] = source.doubleAt(i);
+            }
+            computed = time + 1;
         }
-        for (int i = computed; i <= t; i++) {
-            cache[i] = source.doubleAt(i);
+        // Return from ring buffer if within window
+        if (time >= computed - SIZE) {
+            return ring[(int) (time & (SIZE - 1))];
         }
-        computed = t + 1;
+        // Fell out of ring buffer; recompute directly
+        return source.doubleAt(time);
     }
 }
