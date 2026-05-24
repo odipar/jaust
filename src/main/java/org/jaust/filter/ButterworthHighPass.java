@@ -24,7 +24,7 @@ public class ButterworthHighPass extends Filter {
             public Context context() { return ButterworthHighPass.this.context; }
 
             public double doubleAt(long time) {
-                if (time <= 0) return input.doubleAt(Math.max(0, time));
+                if (time < 0) return 0.0;
 
                 double fc = cutoff.doubleAt(time);
                 double w0 = 2.0 * Math.PI * fc / fs;
@@ -39,10 +39,10 @@ public class ButterworthHighPass extends Filter {
                 double b2 = b0;
 
                 double x0 = input.doubleAt(time);
-                double x1 = (time >= 1) ? input.doubleAt(time - 1) : 0.0;
-                double x2 = (time >= 2) ? input.doubleAt(time - 2) : 0.0;
+                double x1 = input.doubleAt(time - 1);
+                double x2 = input.doubleAt(time - 2);
                 double y1 = holder[0].doubleAt(time - 1);
-                double y2 = (time >= 2) ? holder[0].doubleAt(time - 2) : 0.0;
+                double y2 = holder[0].doubleAt(time - 2);
 
                 return b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
             }

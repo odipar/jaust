@@ -18,7 +18,7 @@ class SequentialDoubleCache implements DoubleSignal {
     public Context context() { return source.context(); }
 
     public double doubleAt(long time) {
-        if (time < 0) return source.doubleAt(time);
+        if (time < 0) return 0.0;
         // Ensure all values up to 'time' are computed sequentially
         if (time >= computed) {
             for (long i = computed; i <= time; i++) {

@@ -17,7 +17,7 @@ public class IirHighPass extends Filter {
             public Context context() { return IirHighPass.this.context; }
 
             public double doubleAt(long time) {
-                if (time <= 0) return input.doubleAt(0);
+                if (time < 0) return 0.0;
                 double fc = cutoff.doubleAt(time);
                 double dt = 1.0 / fs;
                 double rc = 1.0 / (2.0 * Math.PI * fc);

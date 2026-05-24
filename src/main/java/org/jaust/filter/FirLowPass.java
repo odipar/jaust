@@ -22,6 +22,7 @@ public class FirLowPass extends Filter {
             public Context context() { return FirLowPass.this.context; }
 
             public double doubleAt(long time) {
+                if (time < 0) return 0.0;
                 double fc = cutoff.doubleAt(time);
                 int n = Math.max(1, Math.min(order, (int) (fs / (2.0 * fc))));
                 double sum = 0.0;
