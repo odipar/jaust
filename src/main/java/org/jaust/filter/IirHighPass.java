@@ -19,6 +19,7 @@ public class IirHighPass extends Filter {
             public double doubleAt(long time) {
                 if (time < 0) return 0.0;
                 double fc = cutoff.doubleAt(time);
+                if (fc <= 0) return input.doubleAt(time); // No filtering if cutoff is non-positive.
                 double dt = 1.0 / fs;
                 double rc = 1.0 / (2.0 * Math.PI * fc);
                 double alpha = rc / (rc + dt);

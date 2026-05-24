@@ -27,6 +27,8 @@ public class ButterworthHighPass extends Filter {
                 if (time < 0) return 0.0;
 
                 double fc = cutoff.doubleAt(time);
+                if (fc <= 0) return input.doubleAt(time); // No filtering if cutoff is non-positive.
+                
                 double w0 = 2.0 * Math.PI * fc / fs;
                 double alpha = Math.sin(w0) / (2.0 * q);
 

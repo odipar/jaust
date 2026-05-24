@@ -24,6 +24,8 @@ public class FirHighPass extends Filter {
             public double doubleAt(long time) {
                 if (time < 0) return 0.0;
                 double fc = cutoff.doubleAt(time);
+                if (fc <= 0) return input.doubleAt(time); // No filtering if cutoff is non-positive.
+                
                 double normalized = fc / fs; // normalized cutoff (0..0.5)
                 int m = order / 2; // center of the filter
                 double sum = 0.0;
