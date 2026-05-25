@@ -10,7 +10,7 @@ public class SequentialDoubleCache implements DoubleSignal {
     private final double[] ring = new double[SIZE];
     private long computed; // values at indices 0..computed-1 have been computed sequentially
 
-    SequentialDoubleCache(DoubleSignal source) {
+    public SequentialDoubleCache(DoubleSignal source) {
         this.source = source;
         this.computed = 0;
     }
