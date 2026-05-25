@@ -11,22 +11,29 @@ public class IirHighPass extends Filter {
     }
 
     protected DoubleSignal computeOutput(DoubleSignal input, DoubleSignal cutoff) {
-        long fs = context.frequency();
-        DoubleSignal[] holder = new DoubleSignal[1];
-        DoubleSignal output = new SequentialDoubleCache(new DoubleSignal() {
-            public Context context() { return IirHighPass.this.context; }
-
-            public double doubleAt(long time) {
-                if (time < 0) return 0.0;
-                double fc = cutoff.doubleAt(time);
-                if (fc <= 0) return input.doubleAt(time); // No filtering if cutoff is non-positive.
-                double dt = 1.0 / fs;
-                double rc = 1.0 / (2.0 * Math.PI * fc);
-                double alpha = rc / (rc + dt);
-                return alpha * (holder[0].doubleAt(time - 1) + input.doubleAt(time) - input.doubleAt(time - 1));
-            }
-        });
-        holder[0] = output;
+        IirHighPassSignal signal = new IirHighPassSignal(input, cutoff, context);
+        DoubleSignal output = new SequentialDoubleCache(signal);
+        signal.holder = output;
         return output;
+    }
+
+    class IirHighPassSignal extends FilterSignal {
+        protected DoubleSignal holder;
+        double alpha;
+
+        IirHighPassSignal(DoubleSignal input, DoubleSignal cutoff, Context context) {
+            super(input, cutoff, context);
+        }
+
+        void calcCutoff() {
+            double fs = context.frequency();
+            double dt = 1.0 / fs;
+            double rc = 1.0 / (2.0 * Math.PI * fc);
+            alpha = rc / (rc + dt);
+        }
+
+        double doubleAtC(long time) {
+            return alpha * (holder.doubleAt(time - 1) + input.doubleAt(time) - input.doubleAt(time - 1));
+        }
     }
 }
