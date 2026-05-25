@@ -6,7 +6,7 @@
 
     <groupId>org.jaust</groupId>
     <artifactId>jaust</artifactId>
-    <version>0.3.5-SNAPSHOT</version>
+    <version>0.3.6-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
