@@ -4,7 +4,7 @@ import org.jaust.Context;
 import org.jaust.signal.DoubleSignal;
 
 // Ring-buffer cache of 256 values for DoubleSignal, anticipating sequential (back in time t-n) reads.
-class SequentialDoubleCache implements DoubleSignal {
+public class SequentialDoubleCache implements DoubleSignal {
     private static final int SIZE = 256;
     private final DoubleSignal source;
     private final double[] ring = new double[SIZE];
